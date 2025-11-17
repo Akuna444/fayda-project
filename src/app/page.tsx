@@ -1,13 +1,16 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Upload, Download, Loader2 } from "lucide-react";
+import { Upload, Download, Loader2, Printer } from "lucide-react";
 import axios from "axios";
 import Barcode from "react-barcode";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import { toPng, toJpeg } from 'html-to-image';
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
@@ -134,9 +137,110 @@ export default function Home() {
 function GeneratedIDCardPreview({ data }: { data: any }) {
   const frontImageUrl = '/front-template.jpg';
   const backImageUrl = '/back-template.jpg';
+  const frontCardRef = useRef<HTMLDivElement>(null);
+  const backCardRef = useRef<HTMLDivElement>(null);
 
   // Get FCN ID for barcode - remove spaces if present
   const fcnId = data.fcn_id ? data.fcn_id.replace(/\s/g, '') : '4017497305237984';
+
+
+const downloadPDF = async () => {
+  if (!frontCardRef.current || !backCardRef.current) return;
+
+  try {
+    const pdf = new jsPDF('l', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const cardWidth = pdfWidth / 2 - 20;
+    const cardHeight = (cardWidth * 800) / 1280;
+
+    // Use html-to-image instead of html2canvas
+    const [frontDataUrl, backDataUrl] = await Promise.all([
+      toJpeg(frontCardRef.current, { 
+        quality: 0.95,
+        backgroundColor: '#ffffff'
+      }),
+      toJpeg(backCardRef.current, { 
+        quality: 0.95,
+        backgroundColor: '#ffffff'
+      })
+    ]);
+
+    pdf.addImage(frontDataUrl, 'JPEG', 10, (pdfHeight - cardHeight) / 2, cardWidth, cardHeight);
+    pdf.addImage(backDataUrl, 'JPEG', pdfWidth / 2 + 10, (pdfHeight - cardHeight) / 2, cardWidth, cardHeight);
+
+    pdf.setFontSize(16);
+    pdf.text('Ethiopian ID Card', pdfWidth / 2, 15, { align: 'center' });
+    
+    pdf.save('ethiopian-id-card.pdf');
+
+  } catch (error) {
+    console.error('PDF Generation Error:', error);
+    // Fallback to print preview
+    printIDCard();
+  }
+};
+
+  const printIDCard = () => {
+    // Create a print-friendly version
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const frontCard = frontCardRef.current?.innerHTML;
+    const backCard = backCardRef.current?.innerHTML;
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Ethiopian ID Card</title>
+          <style>
+            body { 
+              margin: 0; 
+              padding: 20px; 
+              font-family: Arial, sans-serif;
+              background: white;
+            }
+            .print-container {
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              gap: 20px;
+              flex-wrap: wrap;
+            }
+            .id-card {
+              border: 2px solid #333;
+              box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            }
+            @media print {
+              body { padding: 0; }
+              .print-container { gap: 10px; }
+              .id-card { box-shadow: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="print-container">
+            <div class="id-card">
+              ${frontCard}
+            </div>
+            <div class="id-card">
+              ${backCard}
+            </div>
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(() => window.close(), 1000);
+            }
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+  };
 
   return (
     <div className="space-y-8">
@@ -146,6 +250,7 @@ function GeneratedIDCardPreview({ data }: { data: any }) {
       <div className="space-y-4">
         <h4 className="text-lg font-semibold">Front Side</h4>
         <div 
+          ref={frontCardRef}
           className="relative mx-auto border-2 border-gray-300"
           style={{ 
             height: '800px', 
@@ -208,10 +313,8 @@ function GeneratedIDCardPreview({ data }: { data: any }) {
                 width={2.6}
                 height={50}
                 fontSize={16}
-                
                 format="CODE128"
                 displayValue={false}
-                
                 background="white"
                 lineColor="black"
                 margin={10}
@@ -261,6 +364,7 @@ function GeneratedIDCardPreview({ data }: { data: any }) {
       <div className="space-y-4">
         <h4 className="text-lg font-semibold">Back Side</h4>
         <div 
+          ref={backCardRef}
           className="relative mx-auto border-2 border-gray-300"
           style={{ 
             height: '800px', 
@@ -271,8 +375,6 @@ function GeneratedIDCardPreview({ data }: { data: any }) {
             backgroundRepeat: 'no-repeat'
           }}
         >
-      
-          
           {/* Data Container */}
           <div className="absolute"
                style={{ 
@@ -387,12 +489,13 @@ function GeneratedIDCardPreview({ data }: { data: any }) {
       </div>
 
       <div className="flex gap-4 mt-4">
-        <Button  variant="outline">
-          <Download className="mr-2 h-4 w-4" />
-          Download JSON
+        <Button onClick={downloadPDF} className="bg-blue-600 hover:bg-blue-700">
+          <Printer className="mr-2 h-4 w-4" />
+          Download PDF
         </Button>
-        <Button onClick={() => window.print()}>
-          Print ID Card
+        <Button onClick={printIDCard} variant="outline">
+          <Printer className="mr-2 h-4 w-4" />
+          Print Preview
         </Button>
       </div>
     </div>

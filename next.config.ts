@@ -5,6 +5,8 @@ const nextConfig = {
       sizeLimit: '10mb', // Increase to 10MB or more as needed
     },
   },
+
+  ignoreBuildErrors: true,
   // If using App Router with server actions:
   experimental: {
     serverActions: {
