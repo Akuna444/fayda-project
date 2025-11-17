@@ -35,15 +35,12 @@ export default function Home() {
       formData.append("file", file);
       formData.append("jwtToken", jwtToken);
 
-      // Use local Next.js API route as proxy
       const response = await axios.post("/api/process-pdf", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
-        timeout: 60000, // Increase timeout for file processing
+        timeout: 60000,
       });
-
-      
 
       if (response.data.success) {
         setExtractedData(response.data);
@@ -146,10 +143,7 @@ export default function Home() {
           </form>
 
           {extractedData && (
-            <ExtractedDataView 
-              data={extractedData} 
-              onDownload={downloadData} 
-            />
+            <GeneratedIDCardPreview data={extractedData} />
           )}
         </CardContent>
       </Card>
@@ -157,102 +151,178 @@ export default function Home() {
   );
 }
 
-// Extracted data display component
-function ExtractedDataView({ data, onDownload }: { data: any; onDownload: () => void }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg flex justify-between items-center">
-          <span>Extracted ID Card Data</span>
-          <Button onClick={onDownload} variant="outline" size="sm">
-            <Download className="mr-2 h-4 w-4" />
-            Download JSON
-          </Button>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Display extracted images */}
-        {data.images && data.images.length > 0 && (
-          <div className="space-y-4">
-            <h3 className="font-semibold">Extracted Pages</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {data.images.map((img: string, index: number) => (
-                <div key={index} className="border rounded-lg overflow-hidden">
-                  <img
-                    src={`https://api.fayda.pro.et/${img}`}
-                    alt={`Extracted page ${index + 1}`}
-                    className="w-full h-auto object-contain max-h-64"
-                  />
-                  <p className="text-center text-sm p-2 bg-gray-50">
-                    Page {index + 1}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+// Exact replica of the reverse-engineered ID card front page
+function GeneratedIDCardPreview({ data }: { data: any }) {
+  const frontImageUrl = '/front-template.jpg'; // Use the same background image
 
-        {/* Data fields display */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <DataSection title="Personal Information" fields={[
-            { label: "English Name", value: data.english_name },
-            { label: "Amharic Name", value: data.amharic_name },
-            { label: "Gender (English)", value: data.english_gender },
-            { label: "Gender (Amharic)", value: data.amharic_gender },
-            { label: "Nationality (English)", value: data.english_nationality },
-            { label: "Nationality (Amharic)", value: data.amharic_nationality },
-          ]} />
-
-          <DataSection title="Location Information" fields={[
-            { label: "City (English)", value: data.english_city },
-            { label: "City (Amharic)", value: data.amharic_city },
-            { label: "Sub-city (English)", value: data.english_sub_city },
-            { label: "Sub-city (Amharic)", value: data.amharic_sub_city },
-            { label: "Woreda (English)", value: data.english_woreda },
-            { label: "Woreda (Amharic)", value: data.amharic_woreda },
-          ]} />
-
-          <DataSection title="Birth Dates" fields={[
-            { label: "Ethiopian Calendar", value: data.birth_date_ethiopian },
-            { label: "Gregorian Calendar", value: data.birth_date_gregorian },
-          ]} />
-
-          <DataSection title="Document Dates" fields={[
-            { label: "Issue Date (Gregorian)", value: data.issue_date_gregorian },
-            { label: "Issue Date (Ethiopian)", value: data.issue_date_ethiopian },
-            { label: "Expiry Date (Gregorian)", value: data.expiry_date_gregorian },
-            { label: "Expiry Date (Ethiopian)", value: data.expiry_date_ethiopian },
-          ]} />
-
-          <DataSection title="Identification Numbers" fields={[
-            { label: "FCN ID", value: data.fcn_id },
-            { label: "FIN Number", value: data.fin_number },
-            { label: "Phone Number", value: data.phone_number },
-          ]} />
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function DataSection({ title, fields }: { title: string; fields: Array<{ label: string; value: string }> }) {
   return (
     <div className="space-y-4">
-      <h3 className="font-semibold border-b pb-2">{title}</h3>
-      <div className="space-y-2">
-        {fields.map((field, index) => (
-          <DataField key={index} label={field.label} value={field.value} />
-        ))}
-      </div>
-    </div>
-  );
-}
+      <h3 className="text-xl font-semibold">Preview of ID Card</h3>
+      <div 
+        className="relative mx-auto border-2 border-gray-300"
+        style={{ 
+          height: '800px', 
+          width: '1280px',
+          backgroundImage: `url("${frontImageUrl}")`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      >
+    
 
-function DataField({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between items-center py-1 border-b">
-      <span className="text-sm font-medium text-gray-600">{label}:</span>
-      <span className="text-sm text-gray-900">{value || "Not available"}</span>
+        {/* Profile Images */}
+        {data.images && data.images.length > 0 && (
+          <>
+            <img 
+              src={`https://api.fayda.pro.et/${data.images[0]}`} 
+              alt="Profile" 
+              className="absolute"
+              style={{ 
+                top: '200px', 
+                left: '100px',
+                width: '250px',
+                height: '300px',
+                objectFit: 'cover',
+                borderRadius: '8px'
+              }}
+            />
+            <img 
+              src={`https://api.fayda.pro.et/${data.images[0]}`} 
+              alt="Profile" 
+              className="absolute"
+              style={{ 
+                bottom: '70px', 
+                right: '150px',
+                width: '100px',
+                height: '130px',
+                objectFit: 'fill',
+                borderRadius: '4px'
+              }}
+            />
+          </>
+        )}
+
+        {/* Barcode/ID Number SVG */}
+        <div className="absolute high-quality" style={{ top: '635px', left: '532px' }}>
+          <svg width="432px" height="90px" viewBox="0 0 232 65" xmlns="http://www.w3.org/2000/svg" version="1.1">
+            <rect x="0" y="0" width="232" height="65" style={{fill:'#ffffff'}}></rect>
+            <g transform="translate(5, 5)" style={{fill:'#000000'}}>
+              {/* Barcode lines - simplified version */}
+              <rect x="0" y="25" width="2" height="30"></rect>
+              <rect x="3" y="25" width="1" height="30"></rect>
+              <rect x="6" y="25" width="3" height="30"></rect>
+              <rect x="11" y="25" width="2" height="30"></rect>
+              <rect x="16" y="25" width="1" height="30"></rect>
+              <rect x="18" y="25" width="1" height="30"></rect>
+              <rect x="22" y="25" width="1" height="30"></rect>
+              <rect x="25" y="25" width="3" height="30"></rect>
+              <rect x="30" y="25" width="2" height="30"></rect>
+              <rect x="33" y="25" width="3" height="30"></rect>
+              <rect x="37" y="25" width="1" height="30"></rect>
+              <rect x="39" y="25" width="4" height="30"></rect>
+              <rect x="44" y="25" width="2" height="30"></rect>
+              <rect x="47" y="25" width="2" height="30"></rect>
+              <rect x="51" y="25" width="2" height="30"></rect>
+              <rect x="55" y="25" width="1" height="30"></rect>
+              <rect x="57" y="25" width="3" height="30"></rect>
+              <rect x="61" y="25" width="4" height="30"></rect>
+              <rect x="66" y="25" width="2" height="30"></rect>
+              <rect x="69" y="25" width="1" height="30"></rect>
+              <rect x="73" y="25" width="3" height="30"></rect>
+              <rect x="77" y="25" width="1" height="30"></rect>
+              <rect x="82" y="25" width="2" height="30"></rect>
+              <rect x="85" y="25" width="1" height="30"></rect>
+              <rect x="88" y="25" width="3" height="30"></rect>
+              <rect x="92" y="25" width="1" height="30"></rect>
+              <rect x="94" y="25" width="4" height="30"></rect>
+              <rect x="99" y="25" width="2" height="30"></rect>
+              <rect x="102" y="25" width="2" height="30"></rect>
+              <rect x="106" y="25" width="2" height="30"></rect>
+              <rect x="110" y="25" width="1" height="30"></rect>
+              <rect x="112" y="25" width="3" height="30"></rect>
+              <rect x="116" y="25" width="4" height="30"></rect>
+              <rect x="121" y="25" width="1" height="30"></rect>
+              <rect x="125" y="25" width="1" height="30"></rect>
+              <rect x="128" y="25" width="2" height="30"></rect>
+              <rect x="132" y="25" width="3" height="30"></rect>
+              <rect x="136" y="25" width="2" height="30"></rect>
+              <rect x="139" y="25" width="3" height="30"></rect>
+              <rect x="143" y="25" width="3" height="30"></rect>
+              <rect x="147" y="25" width="1" height="30"></rect>
+              <rect x="149" y="25" width="4" height="30"></rect>
+              <rect x="154" y="25" width="2" height="30"></rect>
+              <rect x="157" y="25" width="2" height="30"></rect>
+              <rect x="161" y="25" width="2" height="30"></rect>
+              <rect x="165" y="25" width="1" height="30"></rect>
+              <rect x="167" y="25" width="3" height="30"></rect>
+              <rect x="171" y="25" width="4" height="30"></rect>
+              <rect x="176" y="25" width="1" height="30"></rect>
+              <rect x="180" y="25" width="4" height="30"></rect>
+              <rect x="185" y="25" width="1" height="30"></rect>
+              <rect x="187" y="25" width="1" height="30"></rect>
+              <rect x="190" y="25" width="4" height="30"></rect>
+              <rect x="195" y="25" width="1" height="30"></rect>
+              <rect x="198" y="25" width="3" height="30"></rect>
+              <rect x="203" y="25" width="2" height="30"></rect>
+              <rect x="206" y="25" width="1" height="30"></rect>
+              <rect x="209" y="25" width="2" height="30"></rect>
+              <rect x="214" y="25" width="3" height="30"></rect>
+              <rect x="218" y="25" width="1" height="30"></rect>
+              <rect x="220" y="25" width="2" height="30"></rect>
+              <text style={{font:'bold 23px MyriadPro'}} textAnchor="middle" x="111" y="21">
+                {data.fcn_id || '4017 4973 0523 7984'}
+              </text>
+            </g>
+          </svg>
+        </div>
+
+        {/* Full Name Data */}
+        <div className="absolute" style={{ top: '215px', left: '512px' }}>
+          <p className="amharic-text text-xl font-bold text-black">{data.amharic_name || 'የኃለሽት አየለ ጉብረሖት'}</p>
+          <p className="english-text text-xl font-bold text-black">{data.english_name || 'Yehualeshet Ayele Gebrehot'}</p>
+        </div>
+
+        {/* Date of Birth Data */}
+        <div className="absolute" style={{ top: '380px', left: '510px' }}>
+          <p className="amharic-text text-xl font-bold text-black">
+            {data.birth_date_ethiopian || '11/06/1991'} | {data.birth_date_gregorian || '1999/Feb/18'}
+          </p>
+        </div>
+
+        {/* Sex Data */}
+        <div className="absolute" style={{ top: '462px', left: '510px' }}>
+          <p className="amharic-text text-xl font-bold text-black">
+            {data.amharic_gender || 'ሴት'} | {data.english_gender || 'Female'}
+          </p>
+        </div>
+
+        {/* Date of Issue Data */}
+        <div className="absolute high-quality" style={{ top: '514px', left: '-28px' }}>
+          <p className="amharic-text rotate-90 text-xl font-bold text-black">{data.issue_date_ethiopian || '2018/03/08'}</p>
+        </div>
+
+        <div className="absolute high-quality" style={{ top: '150px', left: '-28px' }}>
+          <p className="english-text rotate-90 text-xl font-bold text-black">{data.issue_date_gregorian || '2025/Nov/17'}</p>
+        </div>
+
+        {/* Date of Expiry Data */}
+        <div className="absolute" style={{ top: '550px', left: '515px' }}>
+          <p className="amharic-text text-xl font-bold text-black">
+            {data.expiry_date_ethiopian || '2026/03/08'} | {data.expiry_date_gregorian || '2033/Nov/17'}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex gap-4 mt-4">
+        <Button  variant="outline">
+          <Download className="mr-2 h-4 w-4" />
+          Download JSON
+        </Button>
+        <Button onClick={() => window.print()}>
+          Print ID Card
+        </Button>
+      </div>
     </div>
   );
 }
