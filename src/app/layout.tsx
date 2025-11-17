@@ -5,8 +5,7 @@ import "./globals.css";
 
 
 const notoSans = Noto_Sans_Ethiopic({
-  variable: "--font-noto-sans",
-  subsets: ["latin"],
+  variable: "--font-noto-sans"
 });
 
 

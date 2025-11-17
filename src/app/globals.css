@@ -121,3 +121,12 @@
     @apply bg-background text-foreground;
   }
 }
+
+.amharic-text {
+    font-family: NotoSansEthiopic, sans-serif !important;
+}
+
+
+.english-text {
+    font-family: MyriadPro, sans-serif !important;
+}

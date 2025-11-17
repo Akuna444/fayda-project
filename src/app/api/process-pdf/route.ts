@@ -5,9 +5,11 @@ export async function POST(request) {
   try {
     const formData = await request.formData();
     const file = formData.get('file');
-    const jwtToken = formData.get('jwtToken');
 
-    if (!file || !jwtToken) {
+    const jwtToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTFhMWUyNzJkZWEwZjg4ODViNjIyMTciLCJpYXQiOjE3NjMzMTkzMzUsImV4cCI6MTc2MzkyNDEzNX0.QzPArF8GVAfd0177OutWa5aqXt0lBy_8hlKRXWo0dgM"
+
+
+    if (!file) {
       return NextResponse.json(
         { message: 'File and JWT token are required' },
         { status: 400 }
