@@ -281,7 +281,7 @@ export default function Home() {
             </Button>
           </form>
 
-          {userPoints && userPoints.points === 0 && <div>You have Insufficient points contact me to for more points <a href="https://t.me/NatiTG2" target="_blank" >Here</a></div>}
+          {userPoints && userPoints.points === 0 && <div>You have Insufficient points contact me to for more points <a href="https://t.me/NatiTG2" className="font-bold underline" target="_blank" >Here</a></div>}
           
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-md">
