@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Upload, Download, Loader2, Printer, Coins } from "lucide-react";
+import { Upload, Download, Loader2, Printer, Coins, Image, X } from "lucide-react";
 import axios from "axios";
 import Barcode from "react-barcode";
 import html2canvas from "html2canvas";
@@ -14,20 +14,24 @@ import { toPng, toJpeg } from 'html-to-image';
 import { signOut, useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 
+interface UserPoints {
+  points: number;
+}
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [extractedData, setExtractedData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-   const [userPoints, setUserPoints] = useState<UserPoints | null>(null);
+  const [userPoints, setUserPoints] = useState<UserPoints | null>(null);
   const [pointsLoading, setPointsLoading] = useState(true);
+  const [customFrontTemplate, setCustomFrontTemplate] = useState<string | null>(null);
+  const [customBackTemplate, setCustomBackTemplate] = useState<string | null>(null);
   const router = useRouter();
   const session = useSession()
   const user = session?.data?.user;
 
-
-    const fetchUserPoints = async () => {
+  const fetchUserPoints = async () => {
     try {
       setPointsLoading(true);
       const response = await fetch('/api/points', {
@@ -35,7 +39,6 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        next: { revalidate: 300 } // Cache for 5 minutes
       });
 
       if (response.ok) {
@@ -55,6 +58,36 @@ export default function Home() {
     }
   }, [user?.id]);
 
+  const handleTemplateUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'front' | 'back') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check if file is an image
+    if (!file.type.startsWith('image/')) {
+      setError('Please upload an image file');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      if (type === 'front') {
+        setCustomFrontTemplate(result);
+      } else {
+        setCustomBackTemplate(result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeCustomTemplate = (type: 'front' | 'back') => {
+    if (type === 'front') {
+      setCustomFrontTemplate(null);
+    } else {
+      setCustomBackTemplate(null);
+    }
+  };
+
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
     if (!file) {
@@ -62,7 +95,7 @@ export default function Home() {
       return;
     }
 
-     if (userPoints && userPoints.points === 0) {
+    if (userPoints && userPoints.points === 0) {
       setError("Insufficient points. Please add more points to process PDF.");
       return;
     }
@@ -115,27 +148,31 @@ export default function Home() {
 
   return (
     <div className="container mx-auto p-6 max-w-6xl">
-      <div className="w-full gap-5 mb-5  items-center flex">
-      <h1 className="">Welcome, <span className="font-bold ">{user?.email}</span> </h1>
-      {userPoints && (
-            <div className="flex items-center gap-2  text-lg">
-              <Coins className="h-5 w-5 text-yellow-500" />
-              <span className="font-semibold">{userPoints.points} points available</span>
-            </div>
-          )}
-          {pointsLoading && (
-            <div className="flex items-center gap-2 mt-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Loading points...</span>
-            </div>
-          )}
-      <button className="font-bold underline cursor-pointer" onClick={() => signOut({
-  fetchOptions: {
-    onSuccess: () => {
-      router.push("/login"); // redirect to login page
-    },
-  },
-})}>Logout</button> {user?.id === "A6uihg20B1gGIhrMp3Z7rwrLXCUEgfko" && <button className="cursor-pointer" onClick={() => router.push("/add-points")}>Add points</button>} </div>     <Card>
+      <div className="w-full gap-5 mb-5 items-center flex">
+        <h1 className="">Welcome, <span className="font-bold">{user?.email}</span> </h1>
+        {userPoints && (
+          <div className="flex items-center gap-2 text-lg">
+            <Coins className="h-5 w-5 text-yellow-500" />
+            <span className="font-semibold">{userPoints.points} points available</span>
+          </div>
+        )}
+        {pointsLoading && (
+          <div className="flex items-center gap-2 mt-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Loading points...</span>
+          </div>
+        )}
+        <button className="font-bold underline cursor-pointer" onClick={() => signOut({
+          fetchOptions: {
+            onSuccess: () => {
+              router.push("/login");
+            },
+          },
+        })}>Logout</button>
+        {user?.id === "A6uihg20B1gGIhrMp3Z7rwrLXCUEgfko" && <button className="cursor-pointer" onClick={() => router.push("/add-points")}>Add points</button>}
+      </div>
+
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Upload className="h-6 w-6" />
@@ -146,6 +183,70 @@ export default function Home() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Template Upload Section */}
+          {extractedData && (<div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Image className="h-5 w-5" />
+              Custom Templates (Optional)
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Front Template Upload */}
+              <div className="space-y-2">
+                <Label htmlFor="front-template">Front Template</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="front-template"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleTemplateUpload(e, 'front')}
+                    className="cursor-pointer"
+                  />
+                  {customFrontTemplate && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeCustomTemplate('front')}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                {customFrontTemplate && (
+                  <div className="text-sm text-green-600">Custom front template loaded</div>
+                )}
+              </div>
+
+              {/* Back Template Upload */}
+              <div className="space-y-2">
+                <Label htmlFor="back-template">Back Template</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="back-template"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleTemplateUpload(e, 'back')}
+                    className="cursor-pointer"
+                  />
+                  {customBackTemplate && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeCustomTemplate('back')}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                {customBackTemplate && (
+                  <div className="text-sm text-green-600">Custom back template loaded</div>
+                )}
+              </div>
+            </div>
+          </div>)}
+
+          {/* PDF Upload Section */}
           <form onSubmit={handleUpload} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="pdf-upload">PDF File</Label>
@@ -179,6 +280,8 @@ export default function Home() {
               )}
             </Button>
           </form>
+
+          {userPoints && userPoints.points === 0 && <div>You have Insufficient points contact me to for more points <a href="https://t.me/NatiTG2" target="_blank" >Here</a></div>}
           
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-md">
@@ -187,7 +290,11 @@ export default function Home() {
           )}
 
           {extractedData && (
-            <GeneratedIDCardPreview data={extractedData} />
+            <GeneratedIDCardPreview 
+              data={extractedData} 
+              customFrontTemplate={customFrontTemplate}
+              customBackTemplate={customBackTemplate}
+            />
           )}
         </CardContent>
       </Card>
@@ -195,52 +302,61 @@ export default function Home() {
   );
 }
 
-function GeneratedIDCardPreview({ data }: { data: any }) {
-  const frontImageUrl = '/front-template.jpg';
-  const backImageUrl = '/back-template.jpg';
+interface GeneratedIDCardPreviewProps {
+  data: any;
+  customFrontTemplate?: string | null;
+  customBackTemplate?: string | null;
+}
+
+function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate }: GeneratedIDCardPreviewProps) {
+  const defaultFrontImageUrl = '/front-template.jpg';
+  const defaultBackImageUrl = '/back-template.jpg';
+  
+  const frontImageUrl = customFrontTemplate || defaultFrontImageUrl;
+  const backImageUrl = customBackTemplate || defaultBackImageUrl;
+  
   const frontCardRef = useRef<HTMLDivElement>(null);
   const backCardRef = useRef<HTMLDivElement>(null);
 
   // Get FCN ID for barcode - remove spaces if present
   const fcnId = data.fcn_id ? data.fcn_id.replace(/\s/g, '') : '4017497305237984';
 
+  const downloadPDF = async () => {
+    if (!frontCardRef.current || !backCardRef.current) return;
 
-const downloadPDF = async () => {
-  if (!frontCardRef.current || !backCardRef.current) return;
+    try {
+      const pdf = new jsPDF('l', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const cardWidth = pdfWidth / 2 - 20;
+      const cardHeight = (cardWidth * 800) / 1280;
 
-  try {
-    const pdf = new jsPDF('l', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-    const cardWidth = pdfWidth / 2 - 20;
-    const cardHeight = (cardWidth * 800) / 1280;
+      // Use html-to-image instead of html2canvas
+      const [frontDataUrl, backDataUrl] = await Promise.all([
+        toJpeg(frontCardRef.current, { 
+          quality: 0.95,
+          backgroundColor: '#ffffff'
+        }),
+        toJpeg(backCardRef.current, { 
+          quality: 0.95,
+          backgroundColor: '#ffffff'
+        })
+      ]);
 
-    // Use html-to-image instead of html2canvas
-    const [frontDataUrl, backDataUrl] = await Promise.all([
-      toJpeg(frontCardRef.current, { 
-        quality: 0.95,
-        backgroundColor: '#ffffff'
-      }),
-      toJpeg(backCardRef.current, { 
-        quality: 0.95,
-        backgroundColor: '#ffffff'
-      })
-    ]);
+      pdf.addImage(frontDataUrl, 'JPEG', 10, (pdfHeight - cardHeight) / 2, cardWidth, cardHeight);
+      pdf.addImage(backDataUrl, 'JPEG', pdfWidth / 2 + 10, (pdfHeight - cardHeight) / 2, cardWidth, cardHeight);
 
-    pdf.addImage(frontDataUrl, 'JPEG', 10, (pdfHeight - cardHeight) / 2, cardWidth, cardHeight);
-    pdf.addImage(backDataUrl, 'JPEG', pdfWidth / 2 + 10, (pdfHeight - cardHeight) / 2, cardWidth, cardHeight);
+      pdf.setFontSize(16);
+      pdf.text('Ethiopian ID Card', pdfWidth / 2, 15, { align: 'center' });
+      
+      pdf.save('ethiopian-id-card.pdf');
 
-    pdf.setFontSize(16);
-    pdf.text('Ethiopian ID Card', pdfWidth / 2, 15, { align: 'center' });
-    
-    pdf.save('ethiopian-id-card.pdf');
-
-  } catch (error) {
-    console.error('PDF Generation Error:', error);
-    // Fallback to print preview
-    printIDCard();
-  }
-};
+    } catch (error) {
+      console.error('PDF Generation Error:', error);
+      // Fallback to print preview
+      printIDCard();
+    }
+  };
 
   const printIDCard = () => {
     // Create a print-friendly version
@@ -306,6 +422,18 @@ const downloadPDF = async () => {
   return (
     <div className="space-y-8">
       <h3 className="text-[30px] font-semibold">Preview of ID Card</h3>
+      
+      {/* Template Info */}
+      {(customFrontTemplate || customBackTemplate) && (
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+          <p className="text-blue-700 text-sm">
+            Using custom template{customFrontTemplate && customBackTemplate ? 's' : ''}: 
+            {customFrontTemplate && ' Front'}
+            {customFrontTemplate && customBackTemplate && ' and'}
+            {customBackTemplate && ' Back'}
+          </p>
+        </div>
+      )}
       
       {/* Front Card */}
       <div className="space-y-4">
