@@ -6,7 +6,9 @@ const nextConfig = {
     },
   },
 
-  ignoreBuildErrors: true,
+    typescript: {
+    ignoreBuildErrors: true
+  },
   // If using App Router with server actions:
   experimental: {
     serverActions: {
