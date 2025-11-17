@@ -296,8 +296,8 @@ function GeneratedIDCardPreview({ data }: { data: any }) {
                   letterSpacing: '0.5px',
                   color: 'rgb(0, 0, 0)',
                   position: 'absolute',
-                  top: '90px',
-                  left: '40px'
+                  top: '93px',
+                  left: '41px'
                 }}>
               {data.phone_number || '0984124132'}
             </h6>
@@ -309,19 +309,19 @@ function GeneratedIDCardPreview({ data }: { data: any }) {
                    left: '44px',
                    top: '290px'
                  }}>
-              <h6 className="amharic-text" style={{ fontSize: '30px', marginBottom: '1px' }}>
+              <h6 className="amharic-text" style={{ fontSize: '30px', marginBottom: '-5px' }}>
                 {data.amharic_city || 'አማራ'}
               </h6>
               <h6 className="english-text margin_bottom" style={{ fontSize: '30px', marginBottom: '20px' }}>
                 {data.english_city || 'Amhara'}
               </h6>
-              <h6 className="amharic-text" style={{ fontSize: '30px', marginBottom: '1px' }}>
+              <h6 className="amharic-text" style={{ fontSize: '30px', marginBottom: '-5px' }}>
                 {data.amharic_sub_city || 'ባህር ዳር ልዩ ዞን'}
               </h6>
               <h6 className="english-text margin_bottom" style={{ fontSize: '30px', marginBottom: '20px' }}>
                 {data.english_sub_city || 'Bahir Dar Special Zone'}
               </h6>
-              <h6 className="amharic-text" style={{ fontSize: '30px', marginBottom: '1px' }}>
+              <h6 className="amharic-text" style={{ fontSize: '30px', marginBottom: '-5px' }}>
                 {data.amharic_woreda || 'ዳግማዊ ሚኒሊክ'}
               </h6>
               <h6 className="english-text margin_bottom" style={{ fontSize: '30px', marginBottom: '20px' }}>
