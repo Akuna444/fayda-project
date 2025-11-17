@@ -122,6 +122,9 @@
   }
 }
 
+button {
+  cursor:  pointer !important;
+}
 .amharic-text {
     font-family: NotoSansEthiopic, sans-serif !important;
 }

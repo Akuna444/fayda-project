@@ -1,22 +1,59 @@
 'use client';
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Upload, Download, Loader2, Printer } from "lucide-react";
+import { Upload, Download, Loader2, Printer, Coins } from "lucide-react";
 import axios from "axios";
 import Barcode from "react-barcode";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { toPng, toJpeg } from 'html-to-image';
+import { signOut, useSession } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
+
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [extractedData, setExtractedData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+   const [userPoints, setUserPoints] = useState<UserPoints | null>(null);
+  const [pointsLoading, setPointsLoading] = useState(true);
+  const router = useRouter();
+  const session = useSession()
+  const user = session?.data?.user;
+
+
+    const fetchUserPoints = async () => {
+    try {
+      setPointsLoading(true);
+      const response = await fetch('/api/points', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        next: { revalidate: 300 } // Cache for 5 minutes
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUserPoints(data);
+      }
+    } catch (error) {
+      console.error('Error fetching user points:', error);
+    } finally {
+      setPointsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserPoints();
+    }
+  }, [user?.id]);
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
@@ -25,6 +62,10 @@ export default function Home() {
       return;
     }
 
+     if (userPoints && userPoints.points === 0) {
+      setError("Insufficient points. Please add more points to process PDF.");
+      return;
+    }
     setLoading(true);
     setError(null);
     setExtractedData(null);
@@ -36,12 +77,12 @@ export default function Home() {
       const response = await axios.post("/api/process-pdf", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
-        },
-        timeout: 60000,
+        }
       });
 
       if (response.data.success) {
         setExtractedData(response.data);
+        fetchUserPoints()
       } else {
         setError("Failed to process the document: " + (response.data.message || "Unknown error"));
       }
@@ -74,7 +115,27 @@ export default function Home() {
 
   return (
     <div className="container mx-auto p-6 max-w-6xl">
-      <Card>
+      <div className="w-full gap-5 mb-5  items-center flex">
+      <h1 className="">Welcome, <span className="font-bold ">{user?.email}</span> </h1>
+      {userPoints && (
+            <div className="flex items-center gap-2  text-lg">
+              <Coins className="h-5 w-5 text-yellow-500" />
+              <span className="font-semibold">{userPoints.points} points available</span>
+            </div>
+          )}
+          {pointsLoading && (
+            <div className="flex items-center gap-2 mt-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Loading points...</span>
+            </div>
+          )}
+      <button className="font-bold underline cursor-pointer" onClick={() => signOut({
+  fetchOptions: {
+    onSuccess: () => {
+      router.push("/login"); // redirect to login page
+    },
+  },
+})}>Logout</button> {user?.id === "A6uihg20B1gGIhrMp3Z7rwrLXCUEgfko" && <button className="cursor-pointer" onClick={() => router.push("/add-points")}>Add points</button>} </div>     <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Upload className="h-6 w-6" />
@@ -344,11 +405,11 @@ const downloadPDF = async () => {
 
           {/* Date of Issue Data */}
           <div className="absolute high-quality" style={{ top: '485px', left: '-50px' }}>
-            <p className="amharic-text rotate-90 text-[30px] font-bold text-black">{data.issue_date_ethiopian || '2018/03/08'}</p>
+            <p className="amharic-text rotate-270 text-[30px] font-bold text-black">{data.issue_date_ethiopian || '2018/03/08'}</p>
           </div>
 
           <div className="absolute high-quality" style={{ top: '115px', left: '-50px' }}>
-            <p className="english-text rotate-90 text-[30px] font-bold text-black">{data.issue_date_gregorian || '2025/Nov/17'}</p>
+            <p className="english-text rotate-270 text-[30px] font-bold text-black">{data.issue_date_gregorian || '2025/Nov/17'}</p>
           </div>
 
           {/* Date of Expiry Data */}
