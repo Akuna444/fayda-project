@@ -180,9 +180,9 @@ function GeneratedIDCardPreview({ data }: { data: any }) {
               className="absolute"
               style={{ 
                 top: '200px', 
-                left: '100px',
-                width: '250px',
-                height: '300px',
+                left: '55px',
+                width: '440px',
+                height: '540px',
                 objectFit: 'cover',
                 borderRadius: '8px'
               }}
