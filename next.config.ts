@@ -9,6 +9,10 @@ const nextConfig = {
     typescript: {
     ignoreBuildErrors: true
   },
+
+   images: {
+    domains: ["api.fayda.pro.et"],
+  },
   // If using App Router with server actions:
   experimental: {
     serverActions: {
