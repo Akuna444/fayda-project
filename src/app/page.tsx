@@ -204,7 +204,93 @@ export default function Home() {
           </CardHeader>
           
           <CardContent className="space-y-8">
-            {/* Custom Templates Section */}
+           
+
+            {/* Upload Section */}
+            <div className="space-y-6">
+              <form onSubmit={handleUpload} className="space-y-6">
+                <div className="space-y-3">
+                  <Label htmlFor="pdf-upload" className="text-slate-700 font-medium text-lg">
+                    Select PDF File
+                  </Label>
+                  <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                    <div className="flex-1 w-full">
+                      <Input
+                        id="pdf-upload"
+                        type="file"
+                        accept="application/pdf"
+                        onChange={(e) => {
+                          setFile(e.target.files ? e.target.files[0] : null);
+                          setError(null);
+                        }}
+                        className="cursor-pointer border-2 border-dashed border-blue-200 hover:border-blue-400 transition-colors py-6 text-slate-600"
+                      />
+                    </div>
+                    
+                    <Button
+                      type="submit"
+                      disabled={!file || loading}
+                      className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-6 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg shadow-blue-500/25"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+                          Processing PDF...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-3 h-5 w-5" />
+                          Extract Data
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </form>
+
+              {/* Points Warning */}
+              {userPoints && userPoints.points < 1 && (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <Shield className="h-5 w-5 text-amber-600" />
+                    <div>
+                      <p className="text-amber-800 font-medium">
+                        Insufficient points
+                      </p>
+                      <p className="text-amber-700 text-sm mt-1">
+                        Contact me for more points{' '}
+                        <a href="https://t.me/NatiTG2" className="font-bold underline hover:text-amber-900" target="_blank">
+                          Here
+                        </a>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Error Message */}
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                    <p className="text-red-700 font-medium">{error}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            
+
+            {/* Preview Section */}
+            {extractedData && (
+              <GeneratedIDCardPreview 
+                data={extractedData} 
+                customFrontTemplate={customFrontTemplate}
+                customBackTemplate={customBackTemplate}
+              />
+            )}
+
+             {/* Custom Templates Section */}
             {extractedData && (
               <div className="space-y-6 p-6 border-2 border-dashed border-blue-200/50 rounded-2xl bg-gradient-to-r from-blue-50/50 to-indigo-50/50">
                 <div className="flex items-center gap-3">
@@ -286,88 +372,6 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-            )}
-
-            {/* Upload Section */}
-            <div className="space-y-6">
-              <form onSubmit={handleUpload} className="space-y-6">
-                <div className="space-y-3">
-                  <Label htmlFor="pdf-upload" className="text-slate-700 font-medium text-lg">
-                    Select PDF File
-                  </Label>
-                  <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                    <div className="flex-1 w-full">
-                      <Input
-                        id="pdf-upload"
-                        type="file"
-                        accept="application/pdf"
-                        onChange={(e) => {
-                          setFile(e.target.files ? e.target.files[0] : null);
-                          setError(null);
-                        }}
-                        className="cursor-pointer border-2 border-dashed border-blue-200 hover:border-blue-400 transition-colors py-6 text-slate-600"
-                      />
-                    </div>
-                    
-                    <Button
-                      type="submit"
-                      disabled={!file || loading}
-                      className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-6 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg shadow-blue-500/25"
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="mr-3 h-5 w-5 animate-spin" />
-                          Processing PDF...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="mr-3 h-5 w-5" />
-                          Extract Data
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </form>
-
-              {/* Points Warning */}
-              {userPoints && userPoints.points < 1 && (
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <Shield className="h-5 w-5 text-amber-600" />
-                    <div>
-                      <p className="text-amber-800 font-medium">
-                        Insufficient points
-                      </p>
-                      <p className="text-amber-700 text-sm mt-1">
-                        Contact me for more points{' '}
-                        <a href="https://t.me/NatiTG2" className="font-bold underline hover:text-amber-900" target="_blank">
-                          Here
-                        </a>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {/* Error Message */}
-              {error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                    <p className="text-red-700 font-medium">{error}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Preview Section */}
-            {extractedData && (
-              <GeneratedIDCardPreview 
-                data={extractedData} 
-                customFrontTemplate={customFrontTemplate}
-                customBackTemplate={customBackTemplate}
-              />
             )}
           </CardContent>
         </Card>
