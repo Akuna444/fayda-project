@@ -140,7 +140,7 @@ export default function Home() {
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8 p-6 bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-blue-100/50">
           <div className="flex-1">
             <h1 className="text-2xl md:text-3xl font-bold text-slate-800 mb-2">
-              Welcome back, <span className="text-blue-600">{user?.email}</span>
+              Welcome back, <span className="text-lg lg:text-2xl text-blue-600">{user?.email}</span>
             </h1>
             <div className="flex flex-wrap items-center gap-4">
               {userPoints && (
