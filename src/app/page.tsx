@@ -584,7 +584,7 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
   ];
 
   return (
-    <div className="space-y-8 pointer-events-none">
+    <div className="space-y-8 ">
       {/* Preview Header */}
       <div className="text-center space-y-2">
         <h3 className="text-3xl font-bold text-slate-800 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
@@ -715,7 +715,7 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
       {/* Preview Cards - Keeping original dimensions */}
       <div className="space-y-8">
         {/* Front Card */}
-        <div className="space-y-4">
+        <div className="space-y-4 pointer-events-none">
           <h4 className="text-lg font-semibold">Front Side</h4>
           <div 
             ref={frontCardRef}
@@ -855,7 +855,7 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
         </div>
 
         {/* Back Card */}
-        <div className="space-y-4">
+        <div className="space-y-4 pointer-events-none">
           <h4 className="text-lg font-semibold">Back Side</h4>
           <div 
             ref={backCardRef}
