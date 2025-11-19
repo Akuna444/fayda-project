@@ -547,17 +547,17 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
       // Add mirrored images directly to zip (no folders, no labels)
       if (frontImage) {
         const frontBase64 = frontImage.split(',')[1];
-        zip.file('ethiopian-id-front.png', frontBase64, { base64: true });
+        zip.file(`${data.english_name}-front-id.png`, frontBase64, { base64: true });
       }
 
       if (backImage) {
         const backBase64 = backImage.split(',')[1];
-        zip.file('ethiopian-id-back.png', backBase64, { base64: true });
+        zip.file(`${data.english_name}-back-id.png`, backBase64, { base64: true });
       }
 
       // Generate and download ZIP
       const zipBlob = await zip.generateAsync({ type: 'blob' });
-      downloadBlob(zipBlob, 'ethiopian-id-cards.zip');
+      downloadBlob(zipBlob, `${data.english_name}-id-card.zip`);
       console.log('ZIP with mirrored images downloaded successfully');
       
     } catch (error) {
