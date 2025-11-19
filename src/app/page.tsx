@@ -584,7 +584,7 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pointer-events-none">
       {/* Preview Header */}
       <div className="text-center space-y-2">
         <h3 className="text-3xl font-bold text-slate-800 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
