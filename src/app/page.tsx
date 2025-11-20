@@ -20,6 +20,49 @@ interface UserPoints {
   points: number;
 }
 
+// Validation function to check if any required field is null
+const validateExtractedData = (data: any): boolean => {
+  const requiredFields = [
+    'english_name',
+    'english_nationality', 
+    'english_gender',
+    'english_sub_city',
+    'english_city',
+    'english_woreda',
+    'birth_date_ethiopian',
+    'birth_date_gregorian',
+    'amharic_gender',
+    'amharic_city',
+    'amharic_sub_city',
+    'amharic_nationality',
+    'amharic_name',
+    'amharic_woreda',
+    'issue_date_gregorian',
+    'issue_date_ethiopian',
+    'phone_number',
+    'expiry_date_gregorian',
+    'expiry_date_ethiopian',
+    'fcn_id',
+    'fin_number',
+    'images'
+  ];
+
+  for (const field of requiredFields) {
+    if (!data[field]) {
+      console.error(`Missing required field: ${field}`);
+      return false;
+    }
+  }
+
+  // Additional validation for images array
+  if (!Array.isArray(data.images) || data.images.length === 0) {
+    console.error('Images array is missing or empty');
+    return false;
+  }
+
+  return true;
+};
+
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [extractedData, setExtractedData] = useState<any>(null);
@@ -29,6 +72,8 @@ export default function Home() {
   const [pointsLoading, setPointsLoading] = useState(true);
   const [customFrontTemplate, setCustomFrontTemplate] = useState<string | null>(null);
   const [customBackTemplate, setCustomBackTemplate] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const session = useSession()
   const user = session?.data?.user;
@@ -59,6 +104,45 @@ export default function Home() {
       fetchUserPoints();
     }
   }, [user?.id]);
+
+  // Drag and drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    const droppedFiles = e.dataTransfer.files;
+    if (droppedFiles.length > 0) {
+      const droppedFile = droppedFiles[0];
+      if (droppedFile.type === 'application/pdf') {
+        setFile(droppedFile);
+        setError(null);
+      } else {
+        setError('Please drop a PDF file only');
+      }
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      if (selectedFile.type === 'application/pdf') {
+        setFile(selectedFile);
+        setError(null);
+      } else {
+        setError('Please select a PDF file only');
+      }
+    }
+  };
 
   const handleTemplateUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'front' | 'back') => {
     const file = e.target.files?.[0];
@@ -116,8 +200,13 @@ export default function Home() {
       });
 
       if (response.data.success) {
-        setExtractedData(response.data);
-        fetchUserPoints()
+        // Validate the extracted data
+        if (validateExtractedData(response.data)) {
+          setExtractedData(response.data);
+          fetchUserPoints()
+        } else {
+          setError("Invalid PDF: Some required fields are missing or null");
+        }
       } else {
         setError("Failed to process the document: " + (response.data.message || "Unknown error"));
       }
@@ -213,38 +302,65 @@ export default function Home() {
                   <Label htmlFor="pdf-upload" className="text-slate-700 font-medium text-lg">
                     Select PDF File
                   </Label>
-                  <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                    <div className="flex-1 w-full">
-                      <Input
-                        id="pdf-upload"
-                        type="file"
-                        accept="application/pdf"
-                        onChange={(e) => {
-                          setFile(e.target.files ? e.target.files[0] : null);
-                          setError(null);
-                        }}
-                        className="cursor-pointer border-2 border-dashed border-blue-200 hover:border-blue-400 transition-colors py-6 text-slate-600"
-                      />
+                  
+                  {/* Drag and Drop Area */}
+                  <div
+                    className={`border-2 border-dashed rounded-xl p-2 text-center cursor-pointer transition-all duration-200 ${
+                      isDragOver 
+                        ? 'border-blue-400 bg-blue-50' 
+                        : 'border-blue-200 hover:border-blue-400 bg-blue-25'
+                    }`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <div className="flex flex-col items-center justify-center gap-4">
+                      <Upload className="h-12 w-12 text-blue-400" />
+                      <div className="space-y-2">
+                        <p className="text-lg font-medium text-slate-700">
+                          Drag and drop your PDF file here
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          or click to browse files
+                        </p>
+                      </div>
+                      {file && (
+                        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <p className="text-green-700 font-medium">
+                            Selected: {file.name}
+                          </p>
+                        </div>
+                      )}
                     </div>
                     
-                    <Button
-                      type="submit"
-                      disabled={!file || loading}
-                      className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-6 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg shadow-blue-500/25"
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="mr-3 h-5 w-5 animate-spin" />
-                          Processing PDF...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="mr-3 h-5 w-5" />
-                          Extract Data
-                        </>
-                      )}
-                    </Button>
+                    <Input
+                      ref={fileInputRef}
+                      id="pdf-upload"
+                      type="file"
+                      accept="application/pdf"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
                   </div>
+                    
+                  <Button
+                    type="submit"
+                    disabled={!file || loading}
+                    className="w-full bg-blue-600 mt-4 hover:bg-blue-700 text-white px-8 py-6 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg shadow-blue-500/25"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+                        Processing PDF...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="mr-3 h-5 w-5" />
+                        Extract Data
+                      </>
+                    )}
+                  </Button>
                 </div>
               </form>
 
