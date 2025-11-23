@@ -894,7 +894,7 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
                   fontSize: '24px',
                   letterSpacing: '5px',
                   textAlign: 'center',
-                  marginBottom: '5px',
+                  marginBottom: '2px',
                   color: '#000000', // Explicit black color
                   fontFamily: 'Arial, sans-serif', // Explicit font family
                   lineHeight: '1.2',
@@ -929,41 +929,41 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
             </div>
 
             {/* Full Name Data */}
-            <div className="absolute" style={{ top: '210px', left: '512px' }}>
-              <div className="amharic-text text-[30px] font-bold text-black">{data.amharic_name || 'የኃለሽት አየለ ጉብረሖት'}</div>
-              <div className="english-text text-[30px] font-bold text-black">{data.english_name || 'Yehualeshet Ayele Gebrehot'}</div>
+            <div className="absolute leading-11" style={{ top: '210px', left: '510px' }}>
+              <div className="amharic-text text-[32px] font-bold text-black">{data.amharic_name || 'የኃለሽት አየለ ጉብረሖት'}</div>
+              <div className="english-text text-[32px] font-bold text-black">{data.english_name || 'Yehualeshet Ayele Gebrehot'}</div>
             </div>
 
             {/* Date of Birth Data */}
-            <div className="absolute" style={{ top: '380px', left: '510px' }}>
-              <div className="amharic-text text-[30px] font-bold text-black">
+            <div className="absolute" style={{ top: '374px', left: '512px' }}>
+              <div className="amharic-text text-[32px] font-bold text-black">
                 {data.birth_date_ethiopian || '11/06/1991'} | {data.birth_date_gregorian || '1999/Feb/18'}
               </div>
             </div>
 
             {/* Sex Data */}
-            <div className="absolute" style={{ top: '457px', left: '514px' }}>
-              <div className="amharic-text text-[30px] font-bold text-black">
+            <div className="absolute" style={{ top: '457px', left: '512px' }}>
+              <div className="amharic-text text-[32px] font-bold text-black">
                 {data.amharic_gender || 'ሴት'} | {data.english_gender || 'Female'}
               </div>
             </div>
 
             {/* Date of Issue Data */}
-            <div className="absolute" style={{ top: '560px', left: '27px' }}>
-              <div className="amharic-text rotate-270 text-[30px] font-bold text-black transform  origin-left">
+            <div className="absolute" style={{ top: '560px', left: '26px' }}>
+              <div className="amharic-text rotate-270 text-[28px] font-bold text-black transform  origin-left">
                 {data.issue_date_ethiopian || '2018/03/08'}
               </div>
             </div>
 
-            <div className="absolute" style={{ top: '200px', left: '27px' }}>
-              <div className="english-text rotate-270 text-[30px] font-bold text-black transform  origin-left">
+            <div className="absolute" style={{ top: '200px', left: '26px' }}>
+              <div className="english-text rotate-270 text-[28px] font-bold text-black transform  origin-left">
                 {data.issue_date_gregorian || '2025/Nov/17'}
               </div>
             </div>
 
             {/* Date of Expiry Data */}
-            <div className="absolute" style={{ top: '545px', left: '515px' }}>
-              <div className="amharic-text text-[30px] font-bold text-black">
+            <div className="absolute" style={{ top: '542px', left: '512px' }}>
+              <div className="amharic-text text-[32px] font-bold text-black">
                 {data.expiry_date_ethiopian || '2026/03/08'} | {data.expiry_date_gregorian || '2033/Nov/17'}
               </div>
             </div>
@@ -993,29 +993,29 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
                 letterSpacing: '0.5px',
                 color: 'rgb(0, 0, 0)',
                 top: '93px',
-                left: '41px'
+                left: '40px'
               }}>
               {data.phone_number || '0984124132'}
             </div>
 
             {/* Address Data */}
-            <div className="text-black font-bold absolute" style={{ left: '44px', top: '290px' }}>
-              <div className="amharic-text" style={{ fontSize: '30px', marginBottom: '-5px' }}>
+            <div className="text-black font-bold absolute" style={{ left: '43px', top: '290px' }}>
+              <div className="amharic-text" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '-10px' }}>
                 {data.amharic_city || 'አማራ'}
               </div>
-              <div className="english-text margin_bottom" style={{ fontSize: '30px', marginBottom: '20px' }}>
+              <div className="english-text margin_bottom" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '20px' }}>
                 {data.english_city || 'Amhara'}
               </div>
-              <div className="amharic-text" style={{ fontSize: '30px', marginBottom: '-5px' }}>
+              <div className="amharic-text" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '-10px' }}>
                 {data.amharic_sub_city || 'ባህር ዳር ልዩ ዞን'}
               </div>
-              <div className="english-text margin_bottom" style={{ fontSize: '30px', marginBottom: '20px' }}>
+              <div className="english-text margin_bottom" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '20px' }}>
                 {data.english_sub_city || 'Bahir Dar Special Zone'}
               </div>
-              <div className="amharic-text" style={{ fontSize: '30px', marginBottom: '-5px' }}>
+              <div className="amharic-text" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '-10px' }}>
                 {data.amharic_woreda || 'ዳግማዊ ሚኒሊክ'}
               </div>
-              <div className="english-text margin_bottom" style={{ fontSize: '30px', marginBottom: '20px' }}>
+              <div className="english-text margin_bottom" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '20px' }}>
                 {data.english_woreda || 'Dagmawi Minilik'}
               </div>
             </div>

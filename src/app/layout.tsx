@@ -1,12 +1,18 @@
 import type { Metadata } from "next";
-import { Noto_Sans_Ethiopic } from "next/font/google";
+import { Noto_Sans_Ethiopic, Open_Sans } from "next/font/google";
 import "./globals.css";
 
 
 
 const notoSans = Noto_Sans_Ethiopic({
-  variable: "--font-noto-sans"
+  variable: "--font-noto-sans",
+  subsets: ["latin", "ethiopic"],
 });
+
+const openSans = Open_Sans({
+  variable: "--font-open-sans",
+  subsets: ["latin"]
+})
 
 
 
@@ -23,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={` `}
+        className={`${notoSans.variable} ${openSans.variable} antialiased`}
       >
         
         {children}
