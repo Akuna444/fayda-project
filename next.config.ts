@@ -11,13 +11,16 @@ const nextConfig = {
   },
 
    images: {
-    domains: ["api.fayda.pro.et"],
+    domains: ["api.fayda.pro.et", "faydaprint.com"],
   },
+  
   // If using App Router with server actions:
   experimental: {
     serverActions: {
       bodySizeLimit: '10mb',
+
     },
+     turbo: false,
   },
 }
 
