@@ -22,41 +22,48 @@ interface UserPoints {
 
 // Validation function to check if any required field is null
 const validateExtractedData = (data: any): boolean => {
+  // Check if the response has the new structure
+  if (!data.success || !data.result) {
+    console.error('Invalid API response structure');
+    return false;
+  }
+
+  const result = data.result;
   const requiredFields = [
-    'english_name',
-    'english_nationality', 
-    'english_gender',
-    'english_sub_city',
-    'english_city',
-    'english_woreda',
-    'birth_date_ethiopian',
-    'birth_date_gregorian',
-    'amharic_gender',
-    'amharic_city',
-    'amharic_sub_city',
-    'amharic_nationality',
-    'amharic_name',
-    'amharic_woreda',
-    'issue_date_gregorian',
-    'issue_date_ethiopian',
-    'phone_number',
-    'expiry_date_gregorian',
-    'expiry_date_ethiopian',
+    'name_en',
+    'name_am',
+    'nationality_en',
+    'nationality_am',
+    'gender_en',
+    'gender_am',
+    'sub_city_en',
+    'sub_city_am',
+    'city_en',
+    'city_am',
+    'woreda_en',
+    'woreda_am',
+    'dob_ethiopian',
+    'dob_gregorian',
+    'en_issueDate',
+    'am_issueDate',
+    'phone',
+    'en_expired',
+    'am_expired',
     'fcn_id',
     'fin_number',
     'images'
   ];
 
   for (const field of requiredFields) {
-    if (!data[field]) {
+    if (!result[field]) {
       console.error(`Missing required field: ${field}`);
       return false;
     }
   }
 
-  // Additional validation for images array
-  if (!Array.isArray(data.images) || data.images.length === 0) {
-    console.error('Images array is missing or empty');
+  // Additional validation for images object
+  if (!result.images || typeof result.images !== 'object' || Object.keys(result.images).length === 0) {
+    console.error('Images object is missing or empty');
     return false;
   }
 
@@ -119,7 +126,7 @@ export default function Home() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-    
+
     const droppedFiles = e.dataTransfer.files;
     if (droppedFiles.length > 0) {
       const droppedFile = droppedFiles[0];
@@ -184,7 +191,7 @@ export default function Home() {
       setError("Insufficient points. Please add more points to process PDF.");
       return;
     }
-   
+
     setLoading(true)
     setError(null);
     setExtractedData(null);
@@ -200,7 +207,7 @@ export default function Home() {
       });
 
       if (response.data.success) {
-        // Validate the extracted data
+        // Validate the extracted data using the new structure
         if (validateExtractedData(response.data)) {
           setExtractedData(response.data);
           fetchUserPoints()
@@ -212,10 +219,10 @@ export default function Home() {
       }
     } catch (err: any) {
       console.error("Upload error:", err);
-      const errorMessage = err.response?.data?.message || 
-                          err.response?.data?.error || 
-                          err.message || 
-                          "Upload failed. Please try again.";
+      const errorMessage = err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        "Upload failed. Please try again.";
       setError(errorMessage);
     } finally {
       setLoading(false)
@@ -246,10 +253,10 @@ export default function Home() {
               )}
             </div>
           </div>
-          
+
           <div className="flex flex-wrap items-center gap-3">
             {user?.id === "A6uihg20B1gGIhrMp3Z7rwrLXCUEgfko" && (
-              <Button 
+              <Button
                 onClick={() => router.push("/add-points")}
                 className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
               >
@@ -257,7 +264,7 @@ export default function Home() {
                 Add Points
               </Button>
             )}
-            <Button 
+            <Button
               onClick={() => signOut({
                 fetchOptions: {
                   onSuccess: () => {
@@ -291,9 +298,9 @@ export default function Home() {
               </div>
             </div>
           </CardHeader>
-          
+
           <CardContent className="space-y-8">
-           
+
 
             {/* Upload Section */}
             <div className="space-y-6">
@@ -302,14 +309,13 @@ export default function Home() {
                   <Label htmlFor="pdf-upload" className="text-slate-700 font-medium text-lg">
                     Select PDF File
                   </Label>
-                  
+
                   {/* Drag and Drop Area */}
                   <div
-                    className={`border-2 border-dashed rounded-xl p-2 text-center cursor-pointer transition-all duration-200 ${
-                      isDragOver 
-                        ? 'border-blue-400 bg-blue-50' 
-                        : 'border-blue-200 hover:border-blue-400 bg-blue-25'
-                    }`}
+                    className={`border-2 border-dashed rounded-xl p-2 text-center cursor-pointer transition-all duration-200 ${isDragOver
+                      ? 'border-blue-400 bg-blue-50'
+                      : 'border-blue-200 hover:border-blue-400 bg-blue-25'
+                      }`}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
@@ -333,7 +339,7 @@ export default function Home() {
                         </div>
                       )}
                     </div>
-                    
+
                     <Input
                       ref={fileInputRef}
                       id="pdf-upload"
@@ -343,7 +349,7 @@ export default function Home() {
                       className="hidden"
                     />
                   </div>
-                    
+
                   <Button
                     type="submit"
                     disabled={!file || loading}
@@ -383,7 +389,7 @@ export default function Home() {
                   </div>
                 </div>
               )}
-              
+
               {/* Error Message */}
               {error && (
                 <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
@@ -395,18 +401,18 @@ export default function Home() {
               )}
             </div>
 
-            
+
 
             {/* Preview Section */}
             {extractedData && (
-              <GeneratedIDCardPreview 
-                data={extractedData} 
+              <GeneratedIDCardPreview
+                data={extractedData}
                 customFrontTemplate={customFrontTemplate}
                 customBackTemplate={customBackTemplate}
               />
             )}
 
-             {/* Custom Templates Section */}
+            {/* Custom Templates Section */}
             {extractedData && (
               <div className="space-y-6 p-6 border-2 border-dashed border-blue-200/50 rounded-2xl bg-gradient-to-r from-blue-50/50 to-indigo-50/50">
                 <div className="flex items-center gap-3">
@@ -417,7 +423,7 @@ export default function Home() {
                     Custom Templates (Optional)
                   </h3>
                 </div>
-                
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <Label htmlFor="front-template" className="text-slate-700 font-medium">
@@ -504,39 +510,26 @@ interface GeneratedIDCardPreviewProps {
 
 function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate }: GeneratedIDCardPreviewProps) {
   const [downloadLoading, setDownloadLoading] = useState<string | null>(null);
-  const [selectedProfileImage, setSelectedProfileImage] = useState<string>(data.images?.[0] || '');
-  const [selectedMiniProfileImage, setSelectedMiniProfileImage] = useState<string>(data.images?.[0] || '');
-  const [selectedQRCodeImage, setSelectedQRCodeImage] = useState<string>(data.images?.[2] || '');
+
+  // Extract the result from the new API structure
+  const result = data.result || data; // Fallback to old structure for backward compatibility
+
+  // Convert images object to array for easier handling
+  const imagesArray = result.images ? Object.values(result.images) : [];
+
+  const [selectedProfileImage, setSelectedProfileImage] = useState<string>(imagesArray[0] as string || '');
+  const [selectedMiniProfileImage, setSelectedMiniProfileImage] = useState<string>(imagesArray[0] as string || '');
+  const [selectedQRCodeImage, setSelectedQRCodeImage] = useState<string>(imagesArray[2] as string || '');
   const [serialNumber, setSerialNumber] = useState<string>(generateRandomSerial());
-  
+
   const defaultFrontImageUrl = '/front-template.jpg';
   const defaultBackImageUrl = '/back-template.jpg';
-  
+
   const frontImageUrl = customFrontTemplate || defaultFrontImageUrl;
   const backImageUrl = customBackTemplate || defaultBackImageUrl;
-  
+
   const frontCardRef = useRef<HTMLDivElement>(null);
   const backCardRef = useRef<HTMLDivElement>(null);
-
-  // Generate random serial number
-  function generateRandomSerial(): string {
-    return Math.floor(1000000 + Math.random() * 9000000).toString();
-  }
-
-  // Get FCN ID for barcode
-  const fcnId = data.fcn_id ? data.fcn_id.replace(/\s/g, '') : '4017497305237984';
-
-  // Update selected images when data changes
-  useEffect(() => {
-    if (data.images && data.images.length > 0) {
-      setSelectedProfileImage(data.images[0]);
-      setSelectedMiniProfileImage(data.images[0]);
-      if (data.images.length > 2) {
-        setSelectedQRCodeImage(data.images[2]);
-      }
-    }
-    setSerialNumber(generateRandomSerial());
-  }, [data.images]);
 
   // Helper function to download blobs
   const downloadBlob = (blob: Blob, filename: string): void => {
@@ -550,9 +543,17 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
     URL.revokeObjectURL(url);
   };
 
+  // Generate random serial number
+  function generateRandomSerial(): string {
+    return Math.floor(1000000 + Math.random() * 9000000).toString();
+  }
+
+  // Get FCN ID for barcode
+  const fcnId = result.fcn_id ? result.fcn_id.replace(/\s/g, '') : '4017497305237984';
+
   // Capture element using html2canvas with mirror effect
   const captureElementAsImage = async (element: HTMLElement): Promise<string> => {
-    if (!element) return null;
+    if (!element) return '';
 
     try {
       const canvas = await html2canvas(element, {
@@ -578,12 +579,16 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
       mirroredCanvas.width = canvas.width;
       mirroredCanvas.height = canvas.height;
       const ctx = mirroredCanvas.getContext('2d');
-      
+
+      if (!ctx) {
+        throw new Error('Failed to get canvas context');
+      }
+
       // Flip horizontally for printing
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
       ctx.drawImage(canvas, 0, 0);
-      
+
       return mirroredCanvas.toDataURL('image/png', 1.0);
 
     } catch (error) {
@@ -595,12 +600,12 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
   // Download as PDF with mirrored cards only
   const downloadAsPDF = async () => {
     if (!frontCardRef.current || !backCardRef.current) return;
-    
+
     try {
       setDownloadLoading('pdf');
-      
+
       console.log('Starting PDF download with mirror effect...');
-      
+
       const [frontImage, backImage] = await Promise.all([
         captureElementAsImage(frontCardRef.current), // Mirrored front
         captureElementAsImage(backCardRef.current)   // Mirrored back
@@ -634,9 +639,9 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
         pdf.addImage(backImage, 'PNG', margin + cardWidth + 5, margin, cardWidth, cardHeight);
       }
 
-      pdf.save(`${data.english_name}-id-card.pdf`);
+      pdf.save(`${result.name_en}-id-card.pdf`);
       console.log('PDF with mirrored cards downloaded successfully');
-      
+
     } catch (error) {
       console.error('Error downloading PDF:', error);
       alert('Failed to download PDF. Please try again.');
@@ -648,11 +653,11 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
   // Download as ZIP with mirrored images only
   const downloadAsZIP = async () => {
     if (!frontCardRef.current || !backCardRef.current) return;
-    
+
     try {
       setDownloadLoading('zip');
       console.log('Starting ZIP download with mirrored images...');
-      
+
       const [frontImage, backImage] = await Promise.all([
         captureElementAsImage(frontCardRef.current), // Mirrored front
         captureElementAsImage(backCardRef.current)   // Mirrored back
@@ -663,19 +668,19 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
       // Add mirrored images directly to zip (no folders, no labels)
       if (frontImage) {
         const frontBase64 = frontImage.split(',')[1];
-        zip.file(`${data.english_name}-front-id.png`, frontBase64, { base64: true });
+        zip.file(`${result.name_en}-front-id.png`, frontBase64, { base64: true });
       }
 
       if (backImage) {
         const backBase64 = backImage.split(',')[1];
-        zip.file(`${data.english_name}-back-id.png`, backBase64, { base64: true });
+        zip.file(`${result.name_en}-back-id.png`, backBase64, { base64: true });
       }
 
       // Generate and download ZIP
       const zipBlob = await zip.generateAsync({ type: 'blob' });
-      downloadBlob(zipBlob, `${data.english_name}-id-card.zip`);
+      downloadBlob(zipBlob, `${result.name_en}-id-card.zip`);
       console.log('ZIP with mirrored images downloaded successfully');
-      
+
     } catch (error) {
       console.error('Error downloading ZIP:', error);
       alert('Failed to download ZIP. Please try again.');
@@ -712,7 +717,7 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
       </div>
 
       {/* Customization Panel */}
-      {data.images && data.images.length > 0 && (
+      {imagesArray.length > 0 && (
         <div className="space-y-6 p-6 border-2 border-dashed border-green-200 rounded-2xl bg-gradient-to-r from-green-50/50 to-emerald-50/50">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-green-100 rounded-lg">
@@ -722,7 +727,7 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
               Customize ID Card
             </h4>
           </div>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* Main Profile Image Selector */}
             <div className="space-y-2">
@@ -736,8 +741,8 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
                 onChange={(e) => setSelectedProfileImage(e.target.value)}
                 className="w-full p-3 border border-slate-200 rounded-lg bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
               >
-                {data.images.map((image: string, index: number) => (
-                  <option key={index} value={image}>
+                {imagesArray.map((image: string | unknown, index: number) => (
+                  <option key={index} value={image as string}>
                     {index === 0 ? 'Default Profile' : `Image ${index + 1}`}
                   </option>
                 ))}
@@ -756,8 +761,8 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
                 onChange={(e) => setSelectedMiniProfileImage(e.target.value)}
                 className="w-full p-3 border border-slate-200 rounded-lg bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
               >
-                {data.images.map((image: string, index: number) => (
-                  <option key={index} value={image}>
+                {imagesArray.map((image: string | unknown, index: number) => (
+                  <option key={index} value={image as string}>
                     {index === 0 ? 'Default Profile' : `Image ${index + 1}`}
                   </option>
                 ))}
@@ -776,8 +781,8 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
                 onChange={(e) => setSelectedQRCodeImage(e.target.value)}
                 className="w-full p-3 border border-slate-200 rounded-lg bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
               >
-                {data.images.map((image: string, index: number) => (
-                  <option key={index} value={image}>
+                {imagesArray.map((image: string | unknown, index: number) => (
+                  <option key={index} value={image as string}>
                     {index === 2 ? 'Default QR Code' : `Image ${index + 1}`}
                   </option>
                 ))}
@@ -812,14 +817,14 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
           </div>
         </div>
       )}
-      
+
       {/* Custom Template Notice */}
       {(customFrontTemplate || customBackTemplate) && (
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
             <p className="text-blue-700 text-sm">
-              Using custom template{customFrontTemplate && customBackTemplate ? 's' : ''}: 
+              Using custom template{customFrontTemplate && customBackTemplate ? 's' : ''}:
               {customFrontTemplate && ' Front'}
               {customFrontTemplate && customBackTemplate && ' and'}
               {customBackTemplate && ' Back'}
@@ -827,32 +832,32 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
           </div>
         </div>
       )}
-      
+
       {/* Preview Cards - Keeping original dimensions */}
       <div className="space-y-8">
         {/* Front Card */}
         <div className="space-y-4 pointer-events-none">
           <h4 className="text-lg font-semibold">Front Side</h4>
-          <div 
+          <div
             ref={frontCardRef}
             className="relative mx-auto border-2 border-gray-300 bg-cover bg-center bg-no-repeat"
-            style={{ 
-              height: '800px', 
+            style={{
+              height: '800px',
               width: '1280px',
               backgroundImage: `url("${frontImageUrl}")`
             }}
           >
             {/* Profile Images */}
-            {data.images && data.images.length > 0 && (
+            {imagesArray.length > 0 && (
               <>
                 <Image
                   width={440}
                   height={540}
-                  src={`https://api.fayda.pro.et/${selectedProfileImage}`} 
-                  alt="Profile" 
+                  src={`https://faydaprint.com/${selectedProfileImage}`}
+                  alt="Profile"
                   className="absolute"
-                  style={{ 
-                    top: '200px', 
+                  style={{
+                    top: '200px',
                     left: '55px',
                     width: '440px',
                     height: '540px',
@@ -863,11 +868,11 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
                 <Image
                   width={100}
                   height={130}
-                  src={`https://api.fayda.pro.et/${selectedMiniProfileImage}`} 
-                  alt="Profile" 
+                  src={`https://faydaprint.com/${selectedMiniProfileImage}`}
+                  alt="Profile"
                   className="absolute"
-                  style={{ 
-                    bottom: '70px', 
+                  style={{
+                    bottom: '70px',
                     right: '150px',
                     width: '100px',
                     height: '130px',
@@ -880,9 +885,9 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
 
             {/* Dynamic Barcode */}
             <div className="absolute" style={{ top: '620px', left: '570px' }}>
-              <div style={{ 
-                backgroundColor: 'white', 
-                padding: '10px', 
+              <div style={{
+                backgroundColor: 'white',
+                padding: '10px',
                 borderRadius: '4px',
                 display: 'inline-block',
                 position: 'relative',
@@ -904,9 +909,9 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
                   zIndex: 100,
                   position: 'relative'
                 }}>
-                  {data.fcn_id || '4017 4973 0523 7984'}
+                  {result.fcn_id || '4017 4973 0523 7984'}
                 </div>
-                
+
                 {/* Barcode with explicit styling */}
                 <div style={{
                   background: 'white',
@@ -930,41 +935,41 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
 
             {/* Full Name Data */}
             <div className="absolute leading-11" style={{ top: '210px', left: '510px' }}>
-              <div className="amharic-text text-[32px] font-bold text-black">{data.amharic_name || 'የኃለሽት አየለ ጉብረሖት'}</div>
-              <div className="english-text text-[32px] font-bold text-black">{data.english_name || 'Yehualeshet Ayele Gebrehot'}</div>
+              <div className="amharic-text text-[32px] font-bold text-black">{result.name_am || 'የኃለሽት አየለ ጉብረሖት'}</div>
+              <div className="english-text text-[32px] font-bold text-black">{result.name_en || 'Yehualeshet Ayele Gebrehot'}</div>
             </div>
 
             {/* Date of Birth Data */}
             <div className="absolute" style={{ top: '374px', left: '512px' }}>
               <div className="amharic-text text-[32px] font-bold text-black">
-                {data.birth_date_ethiopian || '11/06/1991'} | {data.birth_date_gregorian || '1999/Feb/18'}
+                {result.dob_ethiopian || '11/06/1991'} | {result.dob_gregorian || '1999/Feb/18'}
               </div>
             </div>
 
             {/* Sex Data */}
             <div className="absolute" style={{ top: '457px', left: '512px' }}>
               <div className="amharic-text text-[32px] font-bold text-black">
-                {data.amharic_gender || 'ሴት'} | {data.english_gender || 'Female'}
+                {result.gender_am || 'ሴት'} | {result.gender_en || 'Female'}
               </div>
             </div>
 
             {/* Date of Issue Data */}
             <div className="absolute" style={{ top: '560px', left: '26px' }}>
               <div className="amharic-text rotate-270 text-[28px] font-bold text-black transform  origin-left">
-                {data.issue_date_ethiopian || '2018/03/08'}
+                {result.am_issueDate || '2018/03/08'}
               </div>
             </div>
 
             <div className="absolute" style={{ top: '200px', left: '26px' }}>
               <div className="english-text rotate-270 text-[28px] font-bold text-black transform  origin-left">
-                {data.issue_date_gregorian || '2025/Nov/17'}
+                {result.en_issueDate || '2025/Nov/17'}
               </div>
             </div>
 
             {/* Date of Expiry Data */}
             <div className="absolute" style={{ top: '542px', left: '512px' }}>
               <div className="amharic-text text-[32px] font-bold text-black">
-                {data.expiry_date_ethiopian || '2026/03/08'} | {data.expiry_date_gregorian || '2033/Nov/17'}
+                {result.am_expired || '2026/03/08'} | {result.en_expired || '2033/Nov/17'}
               </div>
             </div>
           </div>
@@ -973,19 +978,19 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
         {/* Back Card */}
         <div className="space-y-4 pointer-events-none">
           <h4 className="text-lg font-semibold">Back Side</h4>
-          <div 
+          <div
             ref={backCardRef}
             className="relative mx-auto border-2 border-gray-300 bg-cover bg-center bg-no-repeat"
-            style={{ 
-              height: '800px', 
+            style={{
+              height: '800px',
               width: '1280px',
               backgroundImage: `url("${backImageUrl}")`
             }}
           >
             {/* Phone Number Data */}
-            <div 
+            <div
               className="english-text absolute"
-              style={{ 
+              style={{
                 margin: '0px',
                 fontWeight: "bold",
                 fontSize: '32px',
@@ -995,33 +1000,33 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
                 top: '93px',
                 left: '40px'
               }}>
-              {data.phone_number || '0984124132'}
+              {result.phone || '0984124132'}
             </div>
 
             {/* Address Data */}
             <div className="text-black font-bold absolute" style={{ left: '43px', top: '290px' }}>
               <div className="amharic-text" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '-10px' }}>
-                {data.amharic_city || 'አማራ'}
+                {result.city_am || 'አማራ'}
               </div>
               <div className="english-text margin_bottom" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '20px' }}>
-                {data.english_city || 'Amhara'}
+                {result.city_en || 'Amhara'}
               </div>
               <div className="amharic-text" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '-10px' }}>
-                {data.amharic_sub_city || 'ባህር ዳር ልዩ ዞን'}
+                {result.sub_city_am || 'ባህር ዳር ልዩ ዞን'}
               </div>
               <div className="english-text margin_bottom" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '20px' }}>
-                {data.english_sub_city || 'Bahir Dar Special Zone'}
+                {result.sub_city_en || 'Bahir Dar Special Zone'}
               </div>
               <div className="amharic-text" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '-10px' }}>
-                {data.amharic_woreda || 'ዳግማዊ ሚኒሊክ'}
+                {result.woreda_am || 'ዳግማዊ ሚኒሊክ'}
               </div>
               <div className="english-text margin_bottom" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '20px' }}>
-                {data.english_woreda || 'Dagmawi Minilik'}
+                {result.woreda_en || 'Dagmawi Minilik'}
               </div>
             </div>
 
             {/* FIN Number */}
-            <div className="absolute" style={{ 
+            <div className="absolute" style={{
               fontWeight: 700,
               fontSize: '30px',
               lineHeight: '10px',
@@ -1030,11 +1035,11 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
               bottom: '113px',
               left: '171px'
             }}>
-              {data.fin_number || '6725-6073-1762'}
+              {result.fin_number || '6725-6073-1762'}
             </div>
 
             {/* Additional Number */}
-            <div style={{ 
+            <div style={{
               fontWeight: "bold",
               fontSize: '28px',
               lineHeight: '1.6',
@@ -1048,7 +1053,7 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
             </div>
 
             {/* QR Code */}
-            <div style={{ 
+            <div style={{
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'center',
@@ -1059,13 +1064,13 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
               height: '650px',
               backgroundColor: 'rgb(255, 255, 255)'
             }}>
-              {data.images && data.images.length > 0 && (
+              {imagesArray.length > 0 && (
                 <Image
                   width={690}
                   height={690}
-                  src={`https://api.fayda.pro.et/${selectedQRCodeImage}`} 
-                  alt="QR Code" 
-                  style={{ 
+                  src={`https://faydaprint.com/${selectedQRCodeImage}`}
+                  alt="QR Code"
+                  style={{
                     width: '690px',
                     height: '690px',
                     objectFit: 'contain'
