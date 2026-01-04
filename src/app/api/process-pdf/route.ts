@@ -65,7 +65,7 @@ export async function POST(request: Request) {
 
     // Make request to external API
     const response = await axios.post(
-      'https://affiliate.fayda.pro.et/api/v1/process',
+      'https://api.affiliate.pro.et/api/v1/process',
       externalFormData,
       {
         headers: {
