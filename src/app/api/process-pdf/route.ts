@@ -25,7 +25,7 @@ export async function POST(request: Request) {
 
     
 
-    const jwtToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTQyNDE2NjQzODE5ZjA4ZWY0Zjg1NjIiLCJpYXQiOjE3NjU5NDk4MDYsImV4cCI6MTc2NjU1NDYwNn0.CdJkxWYq_Cvzjn_06DBcm-cbCIgfIXbq94zFm0XZTT8"
+    const jwtToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTVhNGVkZTBiYzlhMDlmMjdmYjM2NTMiLCJpYXQiOjE3Njc1MjYxMTgsImV4cCI6MTc2ODEzMDkxOH0.3xrVgOEvnpnOyD7oIs_cMMzo45AyjhfvwNsipGBn1Aw"
 
     if (!file || !userId) {
       return NextResponse.json(
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
 
     // Make request to external API
     const response = await axios.post(
-      'https://api.fayda.pro.et/api/v1/process',
+      'https://affiliate.fayda.pro.et/api/v1/process',
       externalFormData,
       {
         headers: {
