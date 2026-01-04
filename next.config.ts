@@ -11,7 +11,7 @@ const nextConfig = {
   },
 
    images: {
-    domains: ["api.fayda.pro.et", "faydaprint.com"],
+    domains: ["api.affiliate.pro.et", "faydaprint.com"],
   },
   
   // If using App Router with server actions:
