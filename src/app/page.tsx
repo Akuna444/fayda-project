@@ -848,7 +848,7 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
                 <Image
                   width={440}
                   height={540}
-                  src={`https://api.fayda.pro.et/${selectedProfileImage}`} 
+                  src={`https://api.affiliate.pro.et/${selectedProfileImage}`} 
                   alt="Profile" 
                   className="absolute"
                   style={{ 
@@ -863,7 +863,7 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
                 <Image
                   width={100}
                   height={130}
-                  src={`https://api.fayda.pro.et/${selectedMiniProfileImage}`} 
+                  src={`https://api.affiliate.pro.et/${selectedMiniProfileImage}`} 
                   alt="Profile" 
                   className="absolute"
                   style={{ 
@@ -1063,7 +1063,7 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
                 <Image
                   width={690}
                   height={690}
-                  src={`https://api.fayda.pro.et/${selectedQRCodeImage}`} 
+                  src={`https://api.affiliate.pro.et/${selectedQRCodeImage}`} 
                   alt="QR Code" 
                   style={{ 
                     width: '690px',
