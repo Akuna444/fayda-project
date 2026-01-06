@@ -930,20 +930,20 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
 
             {/* Full Name Data */}
             <div className="absolute leading-11" style={{ top: '210px', left: '510px' }}>
-              <div className="amharic-text text-[32px] font-bold text-black">{data.amharic_name || 'የኃለሽት አየለ ጉብረሖት'}</div>
-              <div className="english-text text-[32px] font-bold text-black">{data.english_name || 'Yehualeshet Ayele Gebrehot'}</div>
+              <div className="amharic-text text-[34px] font-bold text-black">{data.amharic_name || 'የኃለሽት አየለ ጉብረሖት'}</div>
+              <div className="english-text text-[34px] font-bold text-black">{data.english_name || 'Yehualeshet Ayele Gebrehot'}</div>
             </div>
 
             {/* Date of Birth Data */}
             <div className="absolute" style={{ top: '374px', left: '512px' }}>
-              <div className="amharic-text text-[32px] font-bold text-black">
+              <div className="amharic-text text-[34px] font-bold text-black">
                 {data.birth_date_ethiopian || '11/06/1991'} | {data.birth_date_gregorian || '1999/Feb/18'}
               </div>
             </div>
 
             {/* Sex Data */}
             <div className="absolute" style={{ top: '457px', left: '512px' }}>
-              <div className="amharic-text text-[32px] font-bold text-black">
+              <div className="amharic-text text-[34px] font-bold text-black">
                 {data.amharic_gender || 'ሴት'} | {data.english_gender || 'Female'}
               </div>
             </div>
@@ -963,7 +963,7 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
 
             {/* Date of Expiry Data */}
             <div className="absolute" style={{ top: '542px', left: '512px' }}>
-              <div className="amharic-text text-[32px] font-bold text-black">
+              <div className="amharic-text text-[34px] font-bold text-black">
                 {data.expiry_date_ethiopian || '2026/03/08'} | {data.expiry_date_gregorian || '2033/Nov/17'}
               </div>
             </div>
