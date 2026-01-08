@@ -36,7 +36,7 @@ const addPointsFormSchema = z.object({
     .int('Points must be a whole number')
     .positive('Points must be positive')
     .min(1, 'Points must be at least 1')
-    .max(1000, 'Points cannot exceed 1000'),
+    .max(1000000, 'Points cannot exceed 1,000,000'),
 });
 
 type AddPointsFormValues = z.infer<typeof addPointsFormSchema>;
@@ -73,8 +73,8 @@ export default function AddPointsPage() {
 
       if (response.ok) {
         setRecentTransaction(result.user);
-       alert(result.message)
-        
+        alert(result.message)
+
         form.reset();
       } else {
         alert(result.error || 'Failed to add points')
@@ -87,14 +87,14 @@ export default function AddPointsPage() {
     }
   }
 
-  if(session && session?.data?.user?.id !== "A6uihg20B1gGIhrMp3Z7rwrLXCUEgfko"){
-  return (
-    <div className="min-h-screen flex items-center justify-center">
+  if (session && session?.data?.user?.id !== "A6uihg20B1gGIhrMp3Z7rwrLXCUEgfko") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
         <p className="text-lg">Forbidden</p>
         <Link href="/">Go Home</Link>
-    </div>
-  )
-}
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
@@ -162,15 +162,15 @@ export default function AddPointsPage() {
                         />
                       </FormControl>
                       <FormDescription>
-                        Number of points to add (1-1000)
+                        Number of points to add (1-1,000,000)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={loading}
                   className="w-full"
                 >
@@ -208,7 +208,7 @@ export default function AddPointsPage() {
                   <span className="text-sm font-medium">User:</span>
                   <span>{recentTransaction.email}</span>
                 </div>
-              
+
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">New Balance:</span>
                   <Badge variant="secondary" className="text-lg">

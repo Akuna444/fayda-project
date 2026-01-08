@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 // Validation schema
 const addPointsSchema = z.object({
   email: z.string().email('Invalid email address'),
-  points: z.number().int().positive('Points must be a positive integer'),
+  points: z.number().int().positive('Points must be a positive integer').max(1000000, 'Points cannot exceed 1,000,000'),
 });
 
 export async function POST(request: NextRequest) {
@@ -25,11 +25,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-     const currentUser = await prisma.user.findUnique({
+    const currentUser = await prisma.user.findUnique({
       where: { id: session.user.id }
     });
 
-    if(currentUser?.role !== 'ADMIRAL'){
+    if (currentUser?.role !== 'ADMIRAL') {
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     //   where: { id: session.user.id },
     //   select: { role: true }
     // });
-    
+
     // if (user?.role !== 'ADMIN') {
     //   return NextResponse.json(
     //     { error: 'Insufficient permissions' },
@@ -50,15 +50,15 @@ export async function POST(request: NextRequest) {
     // }
 
     const body = await request.json();
-    
+
     // Validate request body
     const validationResult = addPointsSchema.safeParse(body);
-    
+
     if (!validationResult.success) {
       return NextResponse.json(
-        { 
+        {
           error: 'Invalid input',
-          details: validationResult.error.errors 
+          details: validationResult.error.errors
         },
         { status: 400 }
       );
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    
+
 
     // Add points to user
     const updatedUser = await prisma.user.update({
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
         id: true,
         email: true,
         points: true,
-       
+
       }
     });
 
