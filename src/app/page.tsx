@@ -600,6 +600,56 @@ function GeneratedIDCardList({ dataList, customFrontTemplate, customBackTemplate
     }
   };
 
+  // Helper function to download blobs
+  const downloadBlob = (blob: Blob, filename: string): void => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadConsolidatedZIP = async () => {
+    try {
+      setDownloadLoading(true);
+      const zip = new JSZip();
+
+      for (let i = 0; i < dataList.length; i++) {
+        const data = dataList[i];
+        const frontEl = document.getElementById(`card-front-${i}`);
+        const backEl = document.getElementById(`card-back-${i}`);
+
+        if (frontEl && backEl) {
+          const [frontImage, backImage] = await Promise.all([
+            captureElementAsImage(frontEl),
+            captureElementAsImage(backEl)
+          ]);
+
+          if (frontImage) {
+            const frontBase64 = frontImage.split(',')[1];
+            zip.file(`${data.english_name || `card-${i}`}-front.png`, frontBase64, { base64: true });
+          }
+          if (backImage) {
+            const backBase64 = backImage.split(',')[1];
+            zip.file(`${data.english_name || `card-${i}`}-back.png`, backBase64, { base64: true });
+          }
+        }
+      }
+
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      downloadBlob(zipBlob, 'consolidated-id-cards.zip');
+
+    } catch (e) {
+      console.error(e);
+      alert("Failed to generate ZIP");
+    } finally {
+      setDownloadLoading(false);
+    }
+  }
+
   const downloadConsolidatedPDF = async () => {
     try {
       setDownloadLoading(true);
@@ -680,23 +730,42 @@ function GeneratedIDCardList({ dataList, customFrontTemplate, customBackTemplate
           <h3 className="text-xl font-bold text-slate-800">Batch Results</h3>
           <p className="text-sm text-slate-500">{dataList.length} Cards Generated</p>
         </div>
-        <Button
-          onClick={downloadConsolidatedPDF}
-          disabled={downloadLoading}
-          className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/25"
-        >
-          {downloadLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generating A4 PDF...
-            </>
-          ) : (
-            <>
-              <Printer className="mr-2 h-4 w-4" />
-              Print All to A4 (Front & Back)
-            </>
-          )}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={downloadConsolidatedZIP}
+            disabled={downloadLoading}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/25"
+          >
+            {downloadLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Zipping...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Download All ZIP
+              </>
+            )}
+          </Button>
+          <Button
+            onClick={downloadConsolidatedPDF}
+            disabled={downloadLoading}
+            className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/25"
+          >
+            {downloadLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating A4 PDF...
+              </>
+            ) : (
+              <>
+                <Printer className="mr-2 h-4 w-4" />
+                Print All to A4 (Front & Back)
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-16">
