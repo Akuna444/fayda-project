@@ -24,7 +24,7 @@ interface UserPoints {
 const validateExtractedData = (data: any): boolean => {
   const requiredFields = [
     'english_name',
-    'english_nationality', 
+    'english_nationality',
     'english_gender',
     'english_sub_city',
     'english_city',
@@ -64,8 +64,8 @@ const validateExtractedData = (data: any): boolean => {
 };
 
 export default function Home() {
-  const [file, setFile] = useState<File | null>(null);
-  const [extractedData, setExtractedData] = useState<any>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [allExtractedData, setAllExtractedData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userPoints, setUserPoints] = useState<UserPoints | null>(null);
@@ -119,29 +119,42 @@ export default function Home() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-    
-    const droppedFiles = e.dataTransfer.files;
-    if (droppedFiles.length > 0) {
-      const droppedFile = droppedFiles[0];
-      if (droppedFile.type === 'application/pdf') {
-        setFile(droppedFile);
-        setError(null);
-      } else {
-        setError('Please drop a PDF file only');
-      }
-    }
+
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    handleFilesSelection(droppedFiles);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      if (selectedFile.type === 'application/pdf') {
-        setFile(selectedFile);
-        setError(null);
+    const selectedFiles = e.target.files ? Array.from(e.target.files) : [];
+    handleFilesSelection(selectedFiles);
+  };
+
+  const handleFilesSelection = (selectedFiles: File[]) => {
+    if (selectedFiles.length > 5) {
+      setError("You can only upload up to 5 PDF files at once.");
+      return;
+    }
+
+    const validFiles: File[] = [];
+    let hasInvalid = false;
+
+    for (const file of selectedFiles) {
+      if (file.type === 'application/pdf') {
+        validFiles.push(file);
       } else {
-        setError('Please select a PDF file only');
+        hasInvalid = true;
       }
     }
+
+    if (hasInvalid) {
+      setError('Some files were ignored because they are not PDFs.');
+    } else {
+      setError(null);
+    }
+
+    setFiles(validFiles);
+    // Reset data when new files are selected
+    setAllExtractedData([]);
   };
 
   const handleTemplateUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'front' | 'back') => {
@@ -173,50 +186,68 @@ export default function Home() {
     }
   };
 
+  const removeFile = (index: number) => {
+    setFiles(files.filter((_, i) => i !== index));
+  };
+
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
-    if (!file) {
-      setError("Please select a PDF file");
+    if (files.length === 0) {
+      setError("Please select at least one PDF file");
       return;
     }
 
-    if (userPoints && userPoints.points < 1) {
-      setError("Insufficient points. Please add more points to process PDF.");
+    if (userPoints && userPoints.points < files.length) {
+      setError(`Insufficient points. You need ${files.length} points for ${files.length} files.`);
       return;
     }
-   
+
     setLoading(true)
     setError(null);
-    setExtractedData(null);
+    setAllExtractedData([]);
+
+    const newExtractedData: any[] = [];
+    const errors: string[] = [];
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
 
-      const response = await axios.post("/api/process-pdf", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        }
-      });
+        try {
+          const response = await axios.post("/api/process-pdf", formData, {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            }
+          });
 
-      if (response.data.success) {
-        // Validate the extracted data
-        if (validateExtractedData(response.data)) {
-          setExtractedData(response.data);
-          fetchUserPoints()
-        } else {
-          setError("Invalid PDF: Some required fields are missing or null");
+          if (response.data.success) {
+            if (validateExtractedData(response.data)) {
+              newExtractedData.push(response.data);
+            } else {
+              errors.push(`Invalid PDF content in ${file.name}`);
+            }
+          } else {
+            errors.push(`Failed to process ${file.name}: ${response.data.message || "Unknown error"}`);
+          }
+        } catch (err: any) {
+          console.error(`Error processing ${file.name}:`, err);
+          errors.push(`Error processing ${file.name}: ${err.message}`);
         }
-      } else {
-        setError("Failed to process the document: " + (response.data.message || "Unknown error"));
       }
+
+      if (newExtractedData.length > 0) {
+        setAllExtractedData(newExtractedData);
+        fetchUserPoints();
+      }
+
+      if (errors.length > 0) {
+        setError(errors.join(". "));
+      }
+
     } catch (err: any) {
       console.error("Upload error:", err);
-      const errorMessage = err.response?.data?.message || 
-                          err.response?.data?.error || 
-                          err.message || 
-                          "Upload failed. Please try again.";
-      setError(errorMessage);
+      setError("Global upload failed. Please try again.");
     } finally {
       setLoading(false)
     }
@@ -246,10 +277,10 @@ export default function Home() {
               )}
             </div>
           </div>
-          
+
           <div className="flex flex-wrap items-center gap-3">
             {user?.id === "A6uihg20B1gGIhrMp3Z7rwrLXCUEgfko" && (
-              <Button 
+              <Button
                 onClick={() => router.push("/add-points")}
                 className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
               >
@@ -257,7 +288,7 @@ export default function Home() {
                 Add Points
               </Button>
             )}
-            <Button 
+            <Button
               onClick={() => signOut({
                 fetchOptions: {
                   onSuccess: () => {
@@ -291,25 +322,24 @@ export default function Home() {
               </div>
             </div>
           </CardHeader>
-          
+
           <CardContent className="space-y-8">
-           
+
 
             {/* Upload Section */}
             <div className="space-y-6">
               <form onSubmit={handleUpload} className="space-y-6">
                 <div className="space-y-3">
                   <Label htmlFor="pdf-upload" className="text-slate-700 font-medium text-lg">
-                    Select PDF File
+                    Select PDF Files (Max 5)
                   </Label>
-                  
+
                   {/* Drag and Drop Area */}
                   <div
-                    className={`border-2 border-dashed rounded-xl p-2 text-center cursor-pointer transition-all duration-200 ${
-                      isDragOver 
-                        ? 'border-blue-400 bg-blue-50' 
-                        : 'border-blue-200 hover:border-blue-400 bg-blue-25'
-                    }`}
+                    className={`border-2 border-dashed rounded-xl p-2 text-center cursor-pointer transition-all duration-200 ${isDragOver
+                      ? 'border-blue-400 bg-blue-50'
+                      : 'border-blue-200 hover:border-blue-400 bg-blue-25'
+                      }`}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
@@ -319,45 +349,62 @@ export default function Home() {
                       <Upload className="h-12 w-12 text-blue-400" />
                       <div className="space-y-2">
                         <p className="text-lg font-medium text-slate-700">
-                          Drag and drop your PDF file here
+                          Drag and drop your PDF files here
                         </p>
                         <p className="text-sm text-slate-500">
-                          or click to browse files
+                          or click to browse
                         </p>
                       </div>
-                      {file && (
-                        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                          <p className="text-green-700 font-medium">
-                            Selected: {file.name}
-                          </p>
+
+                      {/* File List Display */}
+                      {files.length > 0 && (
+                        <div className="mt-4 w-full px-8">
+                          <ul className="space-y-2">
+                            {files.map((f, i) => (
+                              <li key={i} className="flex justify-between items-center bg-green-50 p-3 rounded-lg border border-green-200">
+                                <span className="text-green-700 font-medium truncate max-w-[80%]">{f.name}</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => { e.stopPropagation(); removeFile(i); }}
+                                  className="text-red-500 hover:bg-red-100 hover:text-red-700 h-8 w-8 p-0"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </li>
+                            ))}
+                          </ul>
+                          <p className="text-right text-xs text-slate-500 mt-2">{files.length} / 5 files selected</p>
                         </div>
                       )}
                     </div>
-                    
+
                     <Input
                       ref={fileInputRef}
                       id="pdf-upload"
                       type="file"
                       accept="application/pdf"
+                      multiple
                       onChange={handleFileSelect}
                       className="hidden"
                     />
                   </div>
-                    
+
                   <Button
                     type="submit"
-                    disabled={!file || loading}
+                    disabled={files.length === 0 || loading}
                     className="w-full bg-blue-600 mt-4 hover:bg-blue-700 text-white px-8 py-6 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg shadow-blue-500/25"
                   >
                     {loading ? (
                       <>
                         <Loader2 className="mr-3 h-5 w-5 animate-spin" />
-                        Processing PDF...
+                        Processing {files.length} PDF(s)...
                       </>
                     ) : (
                       <>
                         <Upload className="mr-3 h-5 w-5" />
-                        Extract Data
+                        Extract Data from {files.length > 0 ? files.length : ''} File(s)
                       </>
                     )}
                   </Button>
@@ -365,7 +412,7 @@ export default function Home() {
               </form>
 
               {/* Points Warning */}
-              {userPoints && userPoints.points < 1 && (
+              {userPoints && userPoints.points < files.length && (
                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
                   <div className="flex items-center gap-3">
                     <Shield className="h-5 w-5 text-amber-600" />
@@ -374,7 +421,7 @@ export default function Home() {
                         Insufficient points
                       </p>
                       <p className="text-amber-700 text-sm mt-1">
-                        Contact me for more points{' '}
+                        You need {files.length} points but have {userPoints.points}. Contact me{' '}
                         <a href="https://t.me/NatiTG2" className="font-bold underline hover:text-amber-900" target="_blank">
                           Here
                         </a>
@@ -383,7 +430,7 @@ export default function Home() {
                   </div>
                 </div>
               )}
-              
+
               {/* Error Message */}
               {error && (
                 <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
@@ -395,19 +442,25 @@ export default function Home() {
               )}
             </div>
 
-            
 
-            {/* Preview Section */}
-            {extractedData && (
-              <GeneratedIDCardPreview 
-                data={extractedData} 
-                customFrontTemplate={customFrontTemplate}
-                customBackTemplate={customBackTemplate}
-              />
+            {/* Preview Section - Results List */}
+            {allExtractedData.length > 0 && (
+              <div className="space-y-8">
+                <div className="flex justify-between items-center pb-4 border-b border-gray-200">
+                  <h2 className="text-2xl font-bold">Generated ID Cards ({allExtractedData.length})</h2>
+                </div>
+
+                {/* Pass all data to a list/consolidated view */}
+                <GeneratedIDCardList
+                  dataList={allExtractedData}
+                  customFrontTemplate={customFrontTemplate}
+                  customBackTemplate={customBackTemplate}
+                />
+              </div>
             )}
 
-             {/* Custom Templates Section */}
-            {extractedData && (
+            {/* Custom Templates Section */}
+            {allExtractedData.length > 0 && (
               <div className="space-y-6 p-6 border-2 border-dashed border-blue-200/50 rounded-2xl bg-gradient-to-r from-blue-50/50 to-indigo-50/50">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-blue-100 rounded-lg">
@@ -417,7 +470,7 @@ export default function Home() {
                     Custom Templates (Optional)
                   </h3>
                 </div>
-                
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <Label htmlFor="front-template" className="text-slate-700 font-medium">
@@ -496,62 +549,17 @@ export default function Home() {
   );
 }
 
-interface GeneratedIDCardPreviewProps {
-  data: any;
+interface GeneratedIDCardListProps {
+  dataList: any[];
   customFrontTemplate?: string | null;
   customBackTemplate?: string | null;
 }
 
-function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate }: GeneratedIDCardPreviewProps) {
-  const [downloadLoading, setDownloadLoading] = useState<string | null>(null);
-  const [selectedProfileImage, setSelectedProfileImage] = useState<string>(data.images?.[0] || '');
-  const [selectedMiniProfileImage, setSelectedMiniProfileImage] = useState<string>(data.images?.[0] || '');
-  const [selectedQRCodeImage, setSelectedQRCodeImage] = useState<string>(data.images?.[2] || '');
-  const [serialNumber, setSerialNumber] = useState<string>(generateRandomSerial());
-  
-  const defaultFrontImageUrl = '/front-template.jpg';
-  const defaultBackImageUrl = '/back-template.jpg';
-  
-  const frontImageUrl = customFrontTemplate || defaultFrontImageUrl;
-  const backImageUrl = customBackTemplate || defaultBackImageUrl;
-  
-  const frontCardRef = useRef<HTMLDivElement>(null);
-  const backCardRef = useRef<HTMLDivElement>(null);
-
-  // Generate random serial number
-  function generateRandomSerial(): string {
-    return Math.floor(1000000 + Math.random() * 9000000).toString();
-  }
-
-  // Get FCN ID for barcode
-  const fcnId = data.fcn_id ? data.fcn_id.replace(/\s/g, '') : '4017497305237984';
-
-  // Update selected images when data changes
-  useEffect(() => {
-    if (data.images && data.images.length > 0) {
-      setSelectedProfileImage(data.images[0]);
-      setSelectedMiniProfileImage(data.images[0]);
-      if (data.images.length > 2) {
-        setSelectedQRCodeImage(data.images[2]);
-      }
-    }
-    setSerialNumber(generateRandomSerial());
-  }, [data.images]);
-
-  // Helper function to download blobs
-  const downloadBlob = (blob: Blob, filename: string): void => {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
+function GeneratedIDCardList({ dataList, customFrontTemplate, customBackTemplate }: GeneratedIDCardListProps) {
+  const [downloadLoading, setDownloadLoading] = useState<boolean>(false);
 
   // Capture element using html2canvas with mirror effect
-  const captureElementAsImage = async (element: HTMLElement): Promise<string> => {
+  const captureElementAsImage = async (element: HTMLElement): Promise<string | null> => {
     if (!element) return null;
 
     try {
@@ -578,167 +586,202 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
       mirroredCanvas.width = canvas.width;
       mirroredCanvas.height = canvas.height;
       const ctx = mirroredCanvas.getContext('2d');
-      
+
       // Flip horizontally for printing
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
       ctx.drawImage(canvas, 0, 0);
-      
+
       return mirroredCanvas.toDataURL('image/png', 1.0);
 
     } catch (error) {
       console.error('Error capturing element:', error);
-      throw error;
+      return null; // Return null on error so we can skip or handle gracefully
     }
   };
 
-  // Download as PDF with mirrored cards only
-  const downloadAsPDF = async () => {
-    if (!frontCardRef.current || !backCardRef.current) return;
-    
+  const downloadConsolidatedPDF = async () => {
     try {
-      setDownloadLoading('pdf');
-      
-      console.log('Starting PDF download with mirror effect...');
-      
-      const [frontImage, backImage] = await Promise.all([
-        captureElementAsImage(frontCardRef.current), // Mirrored front
-        captureElementAsImage(backCardRef.current)   // Mirrored back
-      ]);
-
-      console.log('Mirrored images captured, creating PDF...');
-
-      // Create PDF in landscape A4
+      setDownloadLoading(true);
       const pdf = new jsPDF({
-        orientation: 'landscape',
+        orientation: 'portrait', // A4 Portrait can fit 5 rows? Let's check dimensions.
+        // A4 is 210mm x 297mm.
+        // Card is typically 85.6mm x 54mm.
+        // Scaled aspect ratio: 1280x800 ~ 1.6.
+        // If we put Front and Back side-by-side: Width = 85.6 * 2 = 171.2mm + Gap. Fits in 210mm.
+        // Height = 54mm. 5 * 54 = 270mm. Fits in 297mm with small margins.
         unit: 'mm',
         format: 'a4'
       });
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const pdfWidth = pdf.internal.pageSize.getWidth(); // 210
+      const pdfHeight = pdf.internal.pageSize.getHeight(); // 297
 
-      // Calculate dimensions for side-by-side layout
-      const margin = 10;
-      const availableWidth = pdfWidth - (2 * margin);
-      const cardWidth = availableWidth / 2 - 5; // 5mm gap between cards
-      const cardHeight = (cardWidth * 800) / 1280; // Maintain aspect ratio
+      const marginTop = 10;
+      const marginSide = 10;
+      const gapX = 5;
+      const gapY = 2; // tight fit
 
-      // Add mirrored front side (left)
-      if (frontImage) {
-        pdf.addImage(frontImage, 'PNG', margin, margin, cardWidth, cardHeight);
+      // Calculate card dimensions to fit
+      // Available width = 210 - 20 = 190.
+      // Two cards + gap: 2*w + 5 = 190 => 2w = 185 => w = 92.5mm.
+      // Max height per row = (297 - 20) / 5 = 55.4mm.
+      // Aspect ratio of card image is 1280/800 = 1.6.
+      // If width = 92.5, height = 92.5 / 1.6 = 57.8mm. Too tall for 5 rows (needs 5*57.8 = 289mm, leaving only 8mm margin total).
+      // Let's constrain by height to be safe? Or just squeeze margins.
+      // If we use height = 53mm. Width = 53 * 1.6 = 84.8mm.
+      // 2 * 84.8 + 5 = 174.6mm. Fits easily in width.
+      // 5 * 53 = 265mm. Fits in 297mm (leaving 32mm vertical margin).
+
+      const cardHeight = 53;
+      const cardWidth = cardHeight * (1280 / 800); // approx 84.8
+
+      // Center horizontally
+      const totalRowWidth = (cardWidth * 2) + gapX;
+      const startX = (pdfWidth - totalRowWidth) / 2;
+
+      for (let i = 0; i < dataList.length; i++) {
+        const frontEl = document.getElementById(`card-front-${i}`);
+        const backEl = document.getElementById(`card-back-${i}`);
+
+        if (frontEl && backEl) {
+          const [frontImage, backImage] = await Promise.all([
+            captureElementAsImage(frontEl),
+            captureElementAsImage(backEl)
+          ]);
+
+          const y = marginTop + (i * (cardHeight + gapY));
+
+          if (frontImage) {
+            pdf.addImage(frontImage, 'PNG', startX, y, cardWidth, cardHeight);
+          }
+          if (backImage) {
+            pdf.addImage(backImage, 'PNG', startX + cardWidth + gapX, y, cardWidth, cardHeight);
+          }
+        }
       }
 
-      // Add mirrored back side (right)
-      if (backImage) {
-        pdf.addImage(backImage, 'PNG', margin + cardWidth + 5, margin, cardWidth, cardHeight);
-      }
+      pdf.save('consolidated-id-cards.pdf');
 
-      pdf.save(`${data.english_name}-id-card.pdf`);
-      console.log('PDF with mirrored cards downloaded successfully');
-      
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
-      alert('Failed to download PDF. Please try again.');
+    } catch (e) {
+      console.error(e);
+      alert("Failed to generate PDF");
     } finally {
-      setDownloadLoading(null);
+      setDownloadLoading(false);
     }
-  };
+  }
 
-  // Download as ZIP with mirrored images only
-  const downloadAsZIP = async () => {
-    if (!frontCardRef.current || !backCardRef.current) return;
-    
-    try {
-      setDownloadLoading('zip');
-      console.log('Starting ZIP download with mirrored images...');
-      
-      const [frontImage, backImage] = await Promise.all([
-        captureElementAsImage(frontCardRef.current), // Mirrored front
-        captureElementAsImage(backCardRef.current)   // Mirrored back
-      ]);
+  return (
+    <div className="space-y-12">
 
-      const zip = new JSZip();
+      {/* Bulk Action Header */}
+      <div className="sticky top-4 z-50 bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-blue-100 flex justify-between items-center">
+        <div>
+          <h3 className="text-xl font-bold text-slate-800">Batch Results</h3>
+          <p className="text-sm text-slate-500">{dataList.length} Cards Generated</p>
+        </div>
+        <Button
+          onClick={downloadConsolidatedPDF}
+          disabled={downloadLoading}
+          className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/25"
+        >
+          {downloadLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Generating A4 PDF...
+            </>
+          ) : (
+            <>
+              <Printer className="mr-2 h-4 w-4" />
+              Print All to A4 (Front & Back)
+            </>
+          )}
+        </Button>
+      </div>
 
-      // Add mirrored images directly to zip (no folders, no labels)
-      if (frontImage) {
-        const frontBase64 = frontImage.split(',')[1];
-        zip.file(`${data.english_name}-front-id.png`, frontBase64, { base64: true });
+      <div className="grid gap-16">
+        {dataList.map((data, index) => (
+          <div key={index} className="space-y-4 border-t border-dashed border-gray-300 pt-8 first:border-0 first:pt-0">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-0.5 rounded-full">#{index + 1}</span>
+              <span className="font-semibold text-slate-700">{data.english_name || 'Unknown Name'}</span>
+            </div>
+            <GeneratedIDCardPreview
+              data={data}
+              index={index}
+              customFrontTemplate={customFrontTemplate}
+              customBackTemplate={customBackTemplate}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+interface GeneratedIDCardPreviewProps {
+  data: any;
+  index: number;
+  customFrontTemplate?: string | null;
+  customBackTemplate?: string | null;
+}
+
+function GeneratedIDCardPreview({ data, index, customFrontTemplate, customBackTemplate }: GeneratedIDCardPreviewProps) {
+  const [selectedProfileImage, setSelectedProfileImage] = useState<string>(data.images?.[0] || '');
+  const [selectedMiniProfileImage, setSelectedMiniProfileImage] = useState<string>(data.images?.[0] || '');
+  const [selectedQRCodeImage, setSelectedQRCodeImage] = useState<string>(data.images?.[2] || '');
+  const [serialNumber, setSerialNumber] = useState<string>(generateRandomSerial());
+
+  const defaultFrontImageUrl = '/front-template.jpg';
+  const defaultBackImageUrl = '/back-template.jpg';
+
+  const frontImageUrl = customFrontTemplate || defaultFrontImageUrl;
+  const backImageUrl = customBackTemplate || defaultBackImageUrl;
+
+  // We assign IDs to these divs so parent can find them
+  const frontCardId = `card-front-${index}`;
+  const backCardId = `card-back-${index}`;
+
+  function generateRandomSerial(): string {
+    return Math.floor(1000000 + Math.random() * 9000000).toString();
+  }
+
+  // Get FCN ID for barcode
+  const fcnId = data.fcn_id ? data.fcn_id.replace(/\s/g, '') : '4017497305237984';
+
+  // Update selected images when data changes
+  useEffect(() => {
+    if (data.images && data.images.length > 0) {
+      setSelectedProfileImage(data.images[0]);
+      setSelectedMiniProfileImage(data.images[0]);
+      if (data.images.length > 2) {
+        setSelectedQRCodeImage(data.images[2]);
       }
-
-      if (backImage) {
-        const backBase64 = backImage.split(',')[1];
-        zip.file(`${data.english_name}-back-id.png`, backBase64, { base64: true });
-      }
-
-      // Generate and download ZIP
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      downloadBlob(zipBlob, `${data.english_name}-id-card.zip`);
-      console.log('ZIP with mirrored images downloaded successfully');
-      
-    } catch (error) {
-      console.error('Error downloading ZIP:', error);
-      alert('Failed to download ZIP. Please try again.');
-    } finally {
-      setDownloadLoading(null);
     }
-  };
-
-  const downloadOptions = [
-    {
-      label: 'Download PDF',
-      icon: Download,
-      onClick: downloadAsPDF,
-      key: 'pdf'
-    },
-    {
-      label: 'Download ZIP',
-      icon: Download,
-      onClick: downloadAsZIP,
-      key: 'zip'
-    }
-  ];
+    setSerialNumber(generateRandomSerial());
+  }, [data.images]);
 
   return (
     <div className="space-y-8 ">
-      {/* Preview Header */}
-      <div className="text-center space-y-2">
-        <h3 className="text-3xl font-bold text-slate-800 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          ID Card Preview
-        </h3>
-        <p className="text-slate-600 max-w-2xl mx-auto">
-          Review your generated ID card below. You can customize images and download in your preferred format.
-        </p>
-      </div>
-
       {/* Customization Panel */}
       {data.images && data.images.length > 0 && (
-        <div className="space-y-6 p-6 border-2 border-dashed border-green-200 rounded-2xl bg-gradient-to-r from-green-50/50 to-emerald-50/50">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <User className="h-5 w-5 text-green-600" />
-            </div>
-            <h4 className="text-lg font-semibold text-slate-800">
-              Customize ID Card
-            </h4>
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div className="space-y-6 p-6 border border-slate-200 rounded-xl bg-slate-50">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Main Profile Image Selector */}
             <div className="space-y-2">
-              <Label htmlFor="profile-image-select" className="text-slate-700 font-medium flex items-center gap-2">
-                <User className="h-4 w-4" />
+              <Label htmlFor={`profile-image-select-${index}`} className="text-xs font-bold text-slate-500 uppercase">
                 Main Profile
               </Label>
               <select
-                id="profile-image-select"
+                id={`profile-image-select-${index}`}
                 value={selectedProfileImage}
                 onChange={(e) => setSelectedProfileImage(e.target.value)}
-                className="w-full p-3 border border-slate-200 rounded-lg bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+                className="w-full p-2 text-sm border border-slate-200 rounded-lg bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
               >
-                {data.images.map((image: string, index: number) => (
-                  <option key={index} value={image}>
-                    {index === 0 ? 'Default Profile' : `Image ${index + 1}`}
+                {data.images.map((image: string, idx: number) => (
+                  <option key={idx} value={image}>
+                    {idx === 0 ? 'Default Profile' : `Image ${idx + 1}`}
                   </option>
                 ))}
               </select>
@@ -746,19 +789,18 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
 
             {/* Mini Profile Image Selector */}
             <div className="space-y-2">
-              <Label htmlFor="mini-profile-select" className="text-slate-700 font-medium flex items-center gap-2">
-                <User className="h-4 w-4" />
+              <Label htmlFor={`mini-profile-select-${index}`} className="text-xs font-bold text-slate-500 uppercase">
                 Mini Profile
               </Label>
               <select
-                id="mini-profile-select"
+                id={`mini-profile-select-${index}`}
                 value={selectedMiniProfileImage}
                 onChange={(e) => setSelectedMiniProfileImage(e.target.value)}
-                className="w-full p-3 border border-slate-200 rounded-lg bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+                className="w-full p-2 text-sm border border-slate-200 rounded-lg bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
               >
-                {data.images.map((image: string, index: number) => (
-                  <option key={index} value={image}>
-                    {index === 0 ? 'Default Profile' : `Image ${index + 1}`}
+                {data.images.map((image: string, idx: number) => (
+                  <option key={idx} value={image}>
+                    {idx === 0 ? 'Default Profile' : `Image ${idx + 1}`}
                   </option>
                 ))}
               </select>
@@ -766,19 +808,18 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
 
             {/* QR Code Image Selector */}
             <div className="space-y-2">
-              <Label htmlFor="qr-code-select" className="text-slate-700 font-medium flex items-center gap-2">
-                <QrCode className="h-4 w-4" />
+              <Label htmlFor={`qr-code-select-${index}`} className="text-xs font-bold text-slate-500 uppercase">
                 QR Code
               </Label>
               <select
-                id="qr-code-select"
+                id={`qr-code-select-${index}`}
                 value={selectedQRCodeImage}
                 onChange={(e) => setSelectedQRCodeImage(e.target.value)}
-                className="w-full p-3 border border-slate-200 rounded-lg bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+                className="w-full p-2 text-sm border border-slate-200 rounded-lg bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
               >
-                {data.images.map((image: string, index: number) => (
-                  <option key={index} value={image}>
-                    {index === 2 ? 'Default QR Code' : `Image ${index + 1}`}
+                {data.images.map((image: string, idx: number) => (
+                  <option key={idx} value={image}>
+                    {idx === 2 ? 'Default QR Code' : `Image ${idx + 1}`}
                   </option>
                 ))}
               </select>
@@ -786,24 +827,24 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
 
             {/* Serial Number Control */}
             <div className="space-y-2">
-              <Label htmlFor="serial-number" className="text-slate-700 font-medium flex items-center gap-2">
-                <Hash className="h-4 w-4" />
+              <Label htmlFor={`serial-number-${index}`} className="text-xs font-bold text-slate-500 uppercase">
                 Serial Number
               </Label>
               <div className="flex gap-2">
                 <Input
-                  id="serial-number"
+                  id={`serial-number-${index}`}
                   type="text"
                   value={serialNumber}
                   onChange={(e) => setSerialNumber(e.target.value)}
-                  className="flex-1 border-slate-200 focus:border-blue-400"
+                  className="flex-1 h-9 text-sm border-slate-200 focus:border-blue-400"
                   placeholder="Enter serial number"
                 />
                 <Button
                   type="button"
                   variant="outline"
+                  size="sm"
                   onClick={() => setSerialNumber(generateRandomSerial())}
-                  className="border-blue-200 text-blue-600 hover:bg-blue-50 whitespace-nowrap"
+                  className="h-9 border-blue-200 text-blue-600 hover:bg-blue-50"
                 >
                   Random
                 </Button>
@@ -812,14 +853,14 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
           </div>
         </div>
       )}
-      
+
       {/* Custom Template Notice */}
       {(customFrontTemplate || customBackTemplate) && (
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
             <p className="text-blue-700 text-sm">
-              Using custom template{customFrontTemplate && customBackTemplate ? 's' : ''}: 
+              Using custom template{customFrontTemplate && customBackTemplate ? 's' : ''}:
               {customFrontTemplate && ' Front'}
               {customFrontTemplate && customBackTemplate && ' and'}
               {customBackTemplate && ' Back'}
@@ -827,275 +868,254 @@ function GeneratedIDCardPreview({ data, customFrontTemplate, customBackTemplate 
           </div>
         </div>
       )}
-      
-      {/* Preview Cards - Keeping original dimensions */}
-      <div className="space-y-8">
+
+      {/* Preview Cards - Kept original high-res dimensions but scaled down slightly with CSS transform for preview if needed, or just scrolling */}
+      <div className="space-y-8 flex flex-col items-center">
         {/* Front Card */}
-        <div className="space-y-4 pointer-events-none">
-          <h4 className="text-lg font-semibold">Front Side</h4>
-          <div 
-            ref={frontCardRef}
-            className="relative mx-auto border-2 border-gray-300 bg-cover bg-center bg-no-repeat"
-            style={{ 
-              height: '800px', 
-              width: '1280px',
-              backgroundImage: `url("${frontImageUrl}")`
-            }}
-          >
-            {/* Profile Images */}
-            {data.images && data.images.length > 0 && (
-              <>
-                <Image
-                  width={440}
-                  height={540}
-                  src={`https://api.affiliate.pro.et/${selectedProfileImage}`} 
-                  alt="Profile" 
-                  className="absolute"
-                  style={{ 
-                    top: '200px', 
-                    left: '55px',
-                    width: '440px',
-                    height: '540px',
-                    objectFit: 'cover',
-                    borderRadius: '8px'
-                  }}
-                />
-                <Image
-                  width={100}
-                  height={130}
-                  src={`https://api.affiliate.pro.et/${selectedMiniProfileImage}`} 
-                  alt="Profile" 
-                  className="absolute"
-                  style={{ 
-                    bottom: '70px', 
-                    right: '150px',
-                    width: '100px',
-                    height: '130px',
-                    objectFit: 'fill',
-                    borderRadius: '4px'
-                  }}
-                />
-              </>
-            )}
-
-            {/* Dynamic Barcode */}
-            <div className="absolute" style={{ top: '620px', left: '570px' }}>
-              <div style={{ 
-                backgroundColor: 'white', 
-                padding: '10px', 
-                borderRadius: '4px',
-                display: 'inline-block',
-                position: 'relative',
-                zIndex: 10
-              }}>
-                {/* FCN ID Text - More explicit styling */}
-                <div style={{
-                  fontWeight: 'bold',
-                  fontSize: '24px',
-                  letterSpacing: '5px',
-                  textAlign: 'center',
-                  marginBottom: '2px',
-                  color: '#000000', // Explicit black color
-                  fontFamily: 'Arial, sans-serif', // Explicit font family
-                  lineHeight: '1.2',
-                  background: 'white',
-                  padding: '2px 5px',
-                  borderRadius: '2px',
-                  zIndex: 100,
-                  position: 'relative'
-                }}>
-                  {data.fcn_id || '4017 4973 0523 7984'}
-                </div>
-                
-                {/* Barcode with explicit styling */}
-                <div style={{
-                  background: 'white',
-                  padding: '5px',
-                  borderRadius: '2px'
-                }}>
-                  <Barcode
-                    value={fcnId}
-                    width={2.6}
-                    height={50}
-                    fontSize={16}
-                    format="CODE128"
-                    displayValue={false}
-                    background="white"
-                    lineColor="#000000" // Explicit black
-                    margin={10}
+        <div className="w-full overflow-x-auto pb-4">
+          <div className="min-w-[1280px] transform scale-75 origin-top-left sm:scale-100">
+            {/* Wrapper for capture */}
+            <div id={frontCardId}
+              className="relative border-2 border-gray-300 bg-cover bg-center bg-no-repeat shadow-lg"
+              style={{
+                height: '800px',
+                width: '1280px',
+                backgroundImage: `url("${frontImageUrl}")`
+              }}
+            >
+              {/* Profile Images */}
+              {data.images && data.images.length > 0 && (
+                <>
+                  <Image
+                    width={440}
+                    height={540}
+                    src={`https://api.affiliate.pro.et/${selectedProfileImage}`}
+                    alt="Profile"
+                    className="absolute"
+                    style={{
+                      top: '200px',
+                      left: '55px',
+                      width: '440px',
+                      height: '540px',
+                      objectFit: 'cover',
+                      borderRadius: '8px'
+                    }}
                   />
+                  <Image
+                    width={100}
+                    height={130}
+                    src={`https://api.affiliate.pro.et/${selectedMiniProfileImage}`}
+                    alt="Profile"
+                    className="absolute"
+                    style={{
+                      bottom: '70px',
+                      right: '150px',
+                      width: '100px',
+                      height: '130px',
+                      objectFit: 'fill',
+                      borderRadius: '4px'
+                    }}
+                  />
+                </>
+              )}
+
+              {/* Dynamic Barcode */}
+              <div className="absolute" style={{ top: '620px', left: '570px' }}>
+                <div style={{
+                  backgroundColor: 'white',
+                  padding: '10px',
+                  borderRadius: '4px',
+                  display: 'inline-block',
+                  position: 'relative',
+                  zIndex: 10
+                }}>
+                  {/* FCN ID Text - More explicit styling */}
+                  <div style={{
+                    fontWeight: 'bold',
+                    fontSize: '24px',
+                    letterSpacing: '5px',
+                    textAlign: 'center',
+                    marginBottom: '2px',
+                    color: '#000000', // Explicit black color
+                    fontFamily: 'Arial, sans-serif', // Explicit font family
+                    lineHeight: '1.2',
+                    background: 'white',
+                    padding: '2px 5px',
+                    borderRadius: '2px',
+                    zIndex: 100,
+                    position: 'relative'
+                  }}>
+                    {data.fcn_id || '4017 4973 0523 7984'}
+                  </div>
+
+                  {/* Barcode with explicit styling */}
+                  <div style={{
+                    background: 'white',
+                    padding: '5px',
+                    borderRadius: '2px'
+                  }}>
+                    <Barcode
+                      value={fcnId}
+                      width={2.6}
+                      height={50}
+                      fontSize={16}
+                      format="CODE128"
+                      displayValue={false}
+                      background="white"
+                      lineColor="#000000" // Explicit black
+                      margin={10}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Full Name Data */}
-            <div className="absolute leading-11" style={{ top: '210px', left: '510px' }}>
-              <div className="amharic-text text-[34px] font-bold text-black">{data.amharic_name || 'የኃለሽት አየለ ጉብረሖት'}</div>
-              <div className="english-text text-[34px] font-bold text-black">{data.english_name || 'Yehualeshet Ayele Gebrehot'}</div>
-            </div>
-
-            {/* Date of Birth Data */}
-            <div className="absolute" style={{ top: '374px', left: '512px' }}>
-              <div className="amharic-text text-[34px] font-bold text-black">
-                {data.birth_date_ethiopian || '11/06/1991'} | {data.birth_date_gregorian || '1999/Feb/18'}
+              {/* Full Name Data */}
+              <div className="absolute leading-11" style={{ top: '210px', left: '510px' }}>
+                <div className="amharic-text text-[34px] font-bold text-black">{data.amharic_name || 'የኃለሽት አየለ ጉብረሖት'}</div>
+                <div className="english-text text-[34px] font-bold text-black">{data.english_name || 'Yehualeshet Ayele Gebrehot'}</div>
               </div>
-            </div>
 
-            {/* Sex Data */}
-            <div className="absolute" style={{ top: '457px', left: '512px' }}>
-              <div className="amharic-text text-[34px] font-bold text-black">
-                {data.amharic_gender || 'ሴት'} | {data.english_gender || 'Female'}
+              {/* Date of Birth Data */}
+              <div className="absolute" style={{ top: '374px', left: '512px' }}>
+                <div className="amharic-text text-[34px] font-bold text-black">
+                  {data.birth_date_ethiopian || '11/06/1991'} | {data.birth_date_gregorian || '1999/Feb/18'}
+                </div>
               </div>
-            </div>
 
-            {/* Date of Issue Data */}
-            <div className="absolute" style={{ top: '560px', left: '26px' }}>
-              <div className="amharic-text rotate-270 text-[28px] font-bold text-black transform  origin-left">
-                {data.issue_date_ethiopian || '2018/03/08'}
+              {/* Sex Data */}
+              <div className="absolute" style={{ top: '457px', left: '512px' }}>
+                <div className="amharic-text text-[34px] font-bold text-black">
+                  {data.amharic_gender || 'ሴት'} | {data.english_gender || 'Female'}
+                </div>
               </div>
-            </div>
 
-            <div className="absolute" style={{ top: '200px', left: '26px' }}>
-              <div className="english-text rotate-270 text-[28px] font-bold text-black transform  origin-left">
-                {data.issue_date_gregorian || '2025/Nov/17'}
+              {/* Date of Issue Data */}
+              <div className="absolute" style={{ top: '560px', left: '26px' }}>
+                <div className="amharic-text rotate-270 text-[28px] font-bold text-black transform  origin-left">
+                  {data.issue_date_ethiopian || '2018/03/08'}
+                </div>
               </div>
-            </div>
 
-            {/* Date of Expiry Data */}
-            <div className="absolute" style={{ top: '542px', left: '512px' }}>
-              <div className="amharic-text text-[34px] font-bold text-black">
-                {data.expiry_date_ethiopian || '2026/03/08'} | {data.expiry_date_gregorian || '2033/Nov/17'}
+              <div className="absolute" style={{ top: '200px', left: '26px' }}>
+                <div className="english-text rotate-270 text-[28px] font-bold text-black transform  origin-left">
+                  {data.issue_date_gregorian || '2025/Nov/17'}
+                </div>
+              </div>
+
+              {/* Date of Expiry Data */}
+              <div className="absolute" style={{ top: '542px', left: '512px' }}>
+                <div className="amharic-text text-[34px] font-bold text-black">
+                  {data.expiry_date_ethiopian || '2026/03/08'} | {data.expiry_date_gregorian || '2033/Nov/17'}
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Back Card */}
-        <div className="space-y-4 pointer-events-none">
-          <h4 className="text-lg font-semibold">Back Side</h4>
-          <div 
-            ref={backCardRef}
-            className="relative mx-auto border-2 border-gray-300 bg-cover bg-center bg-no-repeat"
-            style={{ 
-              height: '800px', 
-              width: '1280px',
-              backgroundImage: `url("${backImageUrl}")`
-            }}
-          >
-            {/* Phone Number Data */}
-            <div 
-              className="english-text absolute"
-              style={{ 
-                margin: '0px',
-                fontWeight: "bold",
-                fontSize: '32px',
-                lineHeight: '1.15',
-                letterSpacing: '0.5px',
+        <div className="w-full overflow-x-auto pb-4">
+          <div className="min-w-[1280px] transform scale-75 origin-top-left sm:scale-100">
+            <div id={backCardId}
+              className="relative border-2 border-gray-300 bg-cover bg-center bg-no-repeat shadow-lg"
+              style={{
+                height: '800px',
+                width: '1280px',
+                backgroundImage: `url("${backImageUrl}")`
+              }}
+            >
+              {/* Phone Number Data */}
+              <div
+                className="english-text absolute"
+                style={{
+                  margin: '0px',
+                  fontWeight: "bold",
+                  fontSize: '32px',
+                  lineHeight: '1.15',
+                  letterSpacing: '0.5px',
+                  color: 'rgb(0, 0, 0)',
+                  top: '93px',
+                  left: '40px'
+                }}>
+                {data.phone_number || '0984124132'}
+              </div>
+
+              {/* Address Data */}
+              <div className="text-black font-bold absolute" style={{ left: '43px', top: '290px' }}>
+                <div className="amharic-text" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '-10px' }}>
+                  {data.amharic_city || 'አማራ'}
+                </div>
+                <div className="english-text margin_bottom" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '20px' }}>
+                  {data.english_city || 'Amhara'}
+                </div>
+                <div className="amharic-text" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '-10px' }}>
+                  {data.amharic_sub_city || 'ባህር ዳር ልዩ ዞን'}
+                </div>
+                <div className="english-text margin_bottom" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '20px' }}>
+                  {data.english_sub_city || 'Bahir Dar Special Zone'}
+                </div>
+                <div className="amharic-text" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '-10px' }}>
+                  {data.amharic_woreda || 'ዳግማዊ ሚኒሊክ'}
+                </div>
+                <div className="english-text margin_bottom" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '20px' }}>
+                  {data.english_woreda || 'Dagmawi Minilik'}
+                </div>
+              </div>
+
+              {/* FIN Number */}
+              <div className="absolute" style={{
+                fontWeight: 700,
+                fontSize: '30px',
+                lineHeight: '10px',
+                letterSpacing: '0px',
                 color: 'rgb(0, 0, 0)',
-                top: '93px',
-                left: '40px'
+                bottom: '113px',
+                left: '171px'
               }}>
-              {data.phone_number || '0984124132'}
-            </div>
+                {data.fin_number || '6725-6073-1762'}
+              </div>
 
-            {/* Address Data */}
-            <div className="text-black font-bold absolute" style={{ left: '43px', top: '290px' }}>
-              <div className="amharic-text" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '-10px' }}>
-                {data.amharic_city || 'አማራ'}
+              {/* Additional Number */}
+              <div style={{
+                fontWeight: "bold",
+                fontSize: '28px',
+                lineHeight: '1.6',
+                letterSpacing: '2px',
+                color: 'rgb(0, 0, 0)',
+                position: 'absolute',
+                left: '1070px',
+                bottom: '27px'
+              }}>
+                {serialNumber}
               </div>
-              <div className="english-text margin_bottom" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '20px' }}>
-                {data.english_city || 'Amhara'}
-              </div>
-              <div className="amharic-text" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '-10px' }}>
-                {data.amharic_sub_city || 'ባህር ዳር ልዩ ዞን'}
-              </div>
-              <div className="english-text margin_bottom" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '20px' }}>
-                {data.english_sub_city || 'Bahir Dar Special Zone'}
-              </div>
-              <div className="amharic-text" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '-10px' }}>
-                {data.amharic_woreda || 'ዳግማዊ ሚኒሊክ'}
-              </div>
-              <div className="english-text margin_bottom" style={{ fontSize: "32px", fontWeight: "bold", marginBottom: '20px' }}>
-                {data.english_woreda || 'Dagmawi Minilik'}
-              </div>
-            </div>
 
-            {/* FIN Number */}
-            <div className="absolute" style={{ 
-              fontWeight: 700,
-              fontSize: '30px',
-              lineHeight: '10px',
-              letterSpacing: '0px',
-              color: 'rgb(0, 0, 0)',
-              bottom: '113px',
-              left: '171px'
-            }}>
-              {data.fin_number || '6725-6073-1762'}
-            </div>
-
-            {/* Additional Number */}
-            <div style={{ 
-              fontWeight: "bold",
-              fontSize: '28px',
-              lineHeight: '1.6',
-              letterSpacing: '2px',
-              color: 'rgb(0, 0, 0)',
-              position: 'absolute',
-              left: '1070px',
-              bottom: '27px'
-            }}>
-              {serialNumber}
-            </div>
-
-            {/* QR Code */}
-            <div style={{ 
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              position: 'absolute',
-              top: '40px',
-              right: '38px',
-              width: '666px',
-              height: '650px',
-              backgroundColor: 'rgb(255, 255, 255)'
-            }}>
-              {data.images && data.images.length > 0 && (
-                <Image
-                  width={690}
-                  height={690}
-                  src={`https://api.affiliate.pro.et/${selectedQRCodeImage}`} 
-                  alt="QR Code" 
-                  style={{ 
-                    width: '690px',
-                    height: '690px',
-                    objectFit: 'contain'
-                  }}
-                />
-              )}
+              {/* QR Code */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                position: 'absolute',
+                top: '40px',
+                right: '38px',
+                width: '666px',
+                height: '650px',
+                backgroundColor: 'rgb(255, 255, 255)'
+              }}>
+                {data.images && data.images.length > 0 && (
+                  <Image
+                    width={690}
+                    height={690}
+                    src={`https://api.affiliate.pro.et/${selectedQRCodeImage}`}
+                    alt="QR Code"
+                    style={{
+                      width: '690px',
+                      height: '690px',
+                      objectFit: 'contain'
+                    }}
+                  />
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Download Buttons */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6 border-t border-slate-200">
-        <p className="text-slate-600 font-medium text-lg">Download your ID card:</p>
-        <div className="flex gap-3 flex-wrap justify-center">
-          {downloadOptions.map((option) => (
-            <Button
-              key={option.key}
-              onClick={option.onClick}
-              disabled={!!downloadLoading}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 font-semibold shadow-lg shadow-blue-500/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {downloadLoading === option.key ? (
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              ) : (
-                <option.icon className="mr-2 h-5 w-5" />
-              )}
-              {option.label}
-            </Button>
-          ))}
         </div>
       </div>
     </div>
