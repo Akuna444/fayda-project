@@ -11,21 +11,21 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const file = formData.get('file');
-  
-        const session = await auth.api.getSession({
-           headers: request.headers
-         });
-     const userId = session?.user?.id
-         if (!userId) {
-           return NextResponse.json(
-             { error: 'Unauthorized' },
-             { status: 401 }
-           );
-         }
 
-    
+    const session = await auth.api.getSession({
+      headers: request.headers
+    });
+    const userId = session?.user?.id
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
 
-    const jwtToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTVhNGVkZTBiYzlhMDlmMjdmYjM2NTMiLCJpYXQiOjE3Njc1MjYxMTgsImV4cCI6MTc2ODEzMDkxOH0.3xrVgOEvnpnOyD7oIs_cMMzo45AyjhfvwNsipGBn1Aw"
+
+
+    const jwtToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTY0YTkyYTBiYzlhMDlmMjdmYjY0YjkiLCJpYXQiOjE3NjgyMDQ2MjEsImV4cCI6MTc2ODgwOTQyMX0.btMd1Mt_c1V5OinnZGzKtl9zQYp5wWcirDEEx6_Y2j0"
 
     if (!file || !userId) {
       return NextResponse.json(
@@ -55,9 +55,9 @@ export async function POST(request: Request) {
     }
 
 
-     // Invalidate the points cache
+    // Invalidate the points cache
     revalidatePath('/api/points');
-   
+
 
     // Create new FormData for external API
     const externalFormData = new FormData();
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
     );
 
 
-     // Deduct 1 point from user
+    // Deduct 1 point from user
     await prisma.user.update({
       where: { id: userId.toString() },
       data: {
@@ -93,14 +93,14 @@ export async function POST(request: Request) {
 
   } catch (error) {
     console.error('Proxy error:', error);
-    
-    
-   
-    
+
+
+
+
     return NextResponse.json(
-      { 
+      {
         message: error.response?.data?.message || 'Failed to process PDF',
-        error: error.message 
+        error: error.message
       },
       { status: error.response?.status || 500 }
     );
