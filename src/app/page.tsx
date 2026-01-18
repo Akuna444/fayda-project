@@ -464,7 +464,7 @@ export default function Home() {
               <div className="space-y-6 p-6 border-2 border-dashed border-blue-200/50 rounded-2xl bg-gradient-to-r from-blue-50/50 to-indigo-50/50">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-blue-100 rounded-lg">
-                    <ImageIcon className="h-5 w-5 text-blue-600" />
+                    <imgIcon className="h-5 w-5 text-blue-600" />
                   </div>
                   <h3 className="text-lg font-semibold text-slate-800">
                     Custom Templates (Optional)
@@ -955,7 +955,7 @@ function GeneratedIDCardPreview({ data, index, customFrontTemplate, customBackTe
               {/* Profile Images */}
               {data.images && data.images.length > 0 && (
                 <>
-                  <Image
+                  <img
                     width={440}
                     height={540}
                     src={`https://api.affiliate.pro.et/${selectedProfileImage}`}
@@ -970,7 +970,7 @@ function GeneratedIDCardPreview({ data, index, customFrontTemplate, customBackTe
                       borderRadius: '8px'
                     }}
                   />
-                  <Image
+                  <img
                     width={100}
                     height={130}
                     src={`https://api.affiliate.pro.et/${selectedMiniProfileImage}`}
@@ -1170,7 +1170,7 @@ function GeneratedIDCardPreview({ data, index, customFrontTemplate, customBackTe
                 backgroundColor: 'rgb(255, 255, 255)'
               }}>
                 {data.images && data.images.length > 0 && (
-                  <Image
+                  <img
                     width={690}
                     height={690}
                     src={`https://api.affiliate.pro.et/${selectedQRCodeImage}`}
