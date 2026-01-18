@@ -6,21 +6,30 @@ const nextConfig = {
     },
   },
 
-    typescript: {
+  typescript: {
     ignoreBuildErrors: true
   },
 
-   images: {
+  images: {
     domains: ["api.affiliate.pro.et", "faydaprint.com"],
   },
-  
+
+  async rewrites() {
+    return [
+      {
+        source: '/remote-images/:path*',
+        destination: 'https://api.affiliate.pro.et/images/:path*',
+      },
+    ]
+  },
+
   // If using App Router with server actions:
   experimental: {
     serverActions: {
       bodySizeLimit: '10mb',
 
     },
-     turbo: false,
+    turbo: false,
   },
 }
 

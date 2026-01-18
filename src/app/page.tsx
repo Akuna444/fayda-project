@@ -63,6 +63,20 @@ const validateExtractedData = (data: any): boolean => {
   return true;
 };
 
+// Helper function to transform remote image URLs to proxied URLs
+const transformImageUrl = (url: string | undefined): string => {
+  if (!url) return '';
+  // Handle absolute URLs
+  if (url.startsWith('https://api.affiliate.pro.et/images/')) {
+    return url.replace('https://api.affiliate.pro.et/images/', '/remote-images/');
+  }
+  // Handle relative paths that start with 'images/'
+  if (url.startsWith('images/')) {
+    return url.replace('images/', '/remote-images/');
+  }
+  return url;
+};
+
 export default function Home() {
   const [files, setFiles] = useState<File[]>([]);
   const [allExtractedData, setAllExtractedData] = useState<any[]>([]);
@@ -237,7 +251,12 @@ export default function Home() {
       }
 
       if (newExtractedData.length > 0) {
-        setAllExtractedData(newExtractedData);
+        // Transform image URLs to bypass CORS
+        const transformedData = newExtractedData.map(data => ({
+          ...data,
+          images: data.images?.map((img: string) => transformImageUrl(img))
+        }));
+        setAllExtractedData(transformedData);
         fetchUserPoints();
       }
 
@@ -464,7 +483,7 @@ export default function Home() {
               <div className="space-y-6 p-6 border-2 border-dashed border-blue-200/50 rounded-2xl bg-gradient-to-r from-blue-50/50 to-indigo-50/50">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-blue-100 rounded-lg">
-                    <imgIcon className="h-5 w-5 text-blue-600" />
+                    <ImageIcon className="h-5 w-5 text-blue-600" />
                   </div>
                   <h3 className="text-lg font-semibold text-slate-800">
                     Custom Templates (Optional)
@@ -955,10 +974,10 @@ function GeneratedIDCardPreview({ data, index, customFrontTemplate, customBackTe
               {/* Profile Images */}
               {data.images && data.images.length > 0 && (
                 <>
-                  <img
+                  <img crossOrigin="anonymous"
                     width={440}
                     height={540}
-                    src={`https://api.affiliate.pro.et/${selectedProfileImage}`}
+                    src={selectedProfileImage.startsWith('/') ? selectedProfileImage : `https://api.affiliate.pro.et/${selectedProfileImage}`}
                     alt="Profile"
                     className="absolute"
                     style={{
@@ -970,10 +989,10 @@ function GeneratedIDCardPreview({ data, index, customFrontTemplate, customBackTe
                       borderRadius: '8px'
                     }}
                   />
-                  <img
+                  <img crossOrigin="anonymous"
                     width={100}
                     height={130}
-                    src={`https://api.affiliate.pro.et/${selectedMiniProfileImage}`}
+                    src={selectedMiniProfileImage.startsWith('/') ? selectedMiniProfileImage : `https://api.affiliate.pro.et/${selectedMiniProfileImage}`}
                     alt="Profile"
                     className="absolute"
                     style={{
@@ -1169,19 +1188,17 @@ function GeneratedIDCardPreview({ data, index, customFrontTemplate, customBackTe
                 height: '650px',
                 backgroundColor: 'rgb(255, 255, 255)'
               }}>
-                {data.images && data.images.length > 0 && (
-                  <img
-                    width={690}
-                    height={690}
-                    src={`https://api.affiliate.pro.et/${selectedQRCodeImage}`}
-                    alt="QR Code"
-                    style={{
-                      width: '690px',
-                      height: '690px',
-                      objectFit: 'contain'
-                    }}
-                  />
-                )}
+                <img crossOrigin="anonymous"
+                  width={690}
+                  height={690}
+                  src={selectedQRCodeImage.startsWith('/') ? selectedQRCodeImage : `https://api.affiliate.pro.et/${selectedQRCodeImage}`}
+                  alt="QR Code"
+                  style={{
+                    width: '690px',
+                    height: '690px',
+                    objectFit: 'contain'
+                  }}
+                />
               </div>
             </div>
           </div>
