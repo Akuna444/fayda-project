@@ -25,7 +25,7 @@ export async function POST(request: Request) {
 
 
 
-    const jwtToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTY0YTkyYTBiYzlhMDlmMjdmYjY0YjkiLCJpYXQiOjE3Njk4ODk1NzIsImV4cCI6MTc3MDQ5NDM3Mn0.RLzPKn447D45OCqJBafB-vWGwyyhB4dSqSwrRsrtLUo"
+    const jwtToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTY0YTkyYTBiYzlhMDlmMjdmYjY0YjkiLCJpYXQiOjE3NzA1NzA1NTgsImV4cCI6MTc3MTE3NTM1OH0.KK3ay84qaYAfj6-9AhZi9taovLQJxUJHK9O3ga4tjF4"
 
     if (!file || !userId) {
       return NextResponse.json(
