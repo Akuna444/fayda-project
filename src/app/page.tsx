@@ -86,6 +86,8 @@ export default function Home() {
   const [pointsLoading, setPointsLoading] = useState(true);
   const [customFrontTemplate, setCustomFrontTemplate] = useState<string | null>(null);
   const [customBackTemplate, setCustomBackTemplate] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'pdf' | 'screenshot'>('pdf');
+  const [screenshotFiles, setScreenshotFiles] = useState<(File | null)[]>([null, null, null]);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -272,6 +274,59 @@ export default function Home() {
     }
   }
 
+  async function handleScreenshotUpload(e: React.FormEvent) {
+    e.preventDefault();
+
+    const [, img2, img3] = screenshotFiles;
+    if (!img2 || !img3) {
+      setError("Image 2 and Image 3 are mandatory.");
+      return;
+    }
+
+    if (userPoints && userPoints.points < 1) {
+      setError(`Insufficient points. You need 1 point to process screenshots.`);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setAllExtractedData([]);
+
+    try {
+      const formData = new FormData();
+      if (screenshotFiles[0]) formData.append("image1", screenshotFiles[0]);
+      formData.append("image2", screenshotFiles[1]!);
+      formData.append("image3", screenshotFiles[2]!);
+
+      const response = await axios.post("/api/process-screenshots", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        }
+      });
+
+      if (response.data.success) {
+        if (validateExtractedData(response.data)) {
+          // Transform image URLs to bypass CORS
+          const transformedData = {
+            ...response.data,
+            images: response.data.images?.map((img: string) => transformImageUrl(img))
+          };
+          setAllExtractedData([transformedData]);
+          fetchUserPoints();
+        } else {
+          setError("Invalid data extracted from screenshots.");
+        }
+      } else {
+        setError(response.data.message || "Failed to process screenshots.");
+      }
+    } catch (err: any) {
+      console.error("Screenshot upload error:", err);
+      setError(err.response?.data?.message || "Screenshot processing failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-8">
       <div className="container mx-auto px-4 max-w-7xl">
@@ -345,90 +400,203 @@ export default function Home() {
           <CardContent className="space-y-8">
 
 
+            {/* Tab Switcher */}
+            <div className="flex p-1 bg-slate-100 rounded-xl mb-6 w-fit mx-auto">
+              <button
+                onClick={() => setActiveTab('pdf')}
+                className={`px-6 py-2 rounded-lg font-medium transition-all ${activeTab === 'pdf'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-800'
+                  }`}
+              >
+                Upload PDF
+              </button>
+              <button
+                onClick={() => setActiveTab('screenshot')}
+                className={`px-6 py-2 rounded-lg font-medium transition-all ${activeTab === 'screenshot'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-800'
+                  }`}
+              >
+                Upload Screenshot
+              </button>
+            </div>
+
             {/* Upload Section */}
             <div className="space-y-6">
-              <form onSubmit={handleUpload} className="space-y-6">
-                <div className="space-y-3">
-                  <Label htmlFor="pdf-upload" className="text-slate-700 font-medium text-lg">
-                    Select PDF Files (Max 5)
-                  </Label>
+              {activeTab === 'pdf' ? (
+                <form onSubmit={handleUpload} className="space-y-6">
+                  <div className="space-y-3">
+                    <Label htmlFor="pdf-upload" className="text-slate-700 font-medium text-lg">
+                      Select PDF Files (Max 5)
+                    </Label>
 
-                  {/* Drag and Drop Area */}
-                  <div
-                    className={`border-2 border-dashed rounded-xl p-2 text-center cursor-pointer transition-all duration-200 ${isDragOver
-                      ? 'border-blue-400 bg-blue-50'
-                      : 'border-blue-200 hover:border-blue-400 bg-blue-25'
-                      }`}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <div className="flex flex-col items-center justify-center gap-4">
-                      <Upload className="h-12 w-12 text-blue-400" />
-                      <div className="space-y-2">
-                        <p className="text-lg font-medium text-slate-700">
-                          Drag and drop your PDF files here
-                        </p>
-                        <p className="text-sm text-slate-500">
-                          or click to browse
-                        </p>
+                    {/* Drag and Drop Area */}
+                    <div
+                      className={`border-2 border-dashed rounded-xl p-2 text-center cursor-pointer transition-all duration-200 ${isDragOver
+                        ? 'border-blue-400 bg-blue-50'
+                        : 'border-blue-200 hover:border-blue-400 bg-blue-25'
+                        }`}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <div className="flex flex-col items-center justify-center gap-4">
+                        <Upload className="h-12 w-12 text-blue-400" />
+                        <div className="space-y-2">
+                          <p className="text-lg font-medium text-slate-700">
+                            Drag and drop your PDF files here
+                          </p>
+                          <p className="text-sm text-slate-500">
+                            or click to browse
+                          </p>
+                        </div>
+
+                        {/* File List Display */}
+                        {files.length > 0 && (
+                          <div className="mt-4 w-full px-8">
+                            <ul className="space-y-2">
+                              {files.map((f, i) => (
+                                <li key={i} className="flex justify-between items-center bg-green-50 p-3 rounded-lg border border-green-200">
+                                  <span className="text-green-700 font-medium truncate max-w-[80%]">{f.name}</span>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => { e.stopPropagation(); removeFile(i); }}
+                                    className="text-red-500 hover:bg-red-100 hover:text-red-700 h-8 w-8 p-0"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </li>
+                              ))}
+                            </ul>
+                            <p className="text-right text-xs text-slate-500 mt-2">{files.length} / 5 files selected</p>
+                          </div>
+                        )}
                       </div>
 
-                      {/* File List Display */}
-                      {files.length > 0 && (
-                        <div className="mt-4 w-full px-8">
-                          <ul className="space-y-2">
-                            {files.map((f, i) => (
-                              <li key={i} className="flex justify-between items-center bg-green-50 p-3 rounded-lg border border-green-200">
-                                <span className="text-green-700 font-medium truncate max-w-[80%]">{f.name}</span>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={(e) => { e.stopPropagation(); removeFile(i); }}
-                                  className="text-red-500 hover:bg-red-100 hover:text-red-700 h-8 w-8 p-0"
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </li>
-                            ))}
-                          </ul>
-                          <p className="text-right text-xs text-slate-500 mt-2">{files.length} / 5 files selected</p>
-                        </div>
-                      )}
+                      <Input
+                        ref={fileInputRef}
+                        id="pdf-upload"
+                        type="file"
+                        accept="application/pdf"
+                        multiple
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
                     </div>
 
-                    <Input
-                      ref={fileInputRef}
-                      id="pdf-upload"
-                      type="file"
-                      accept="application/pdf"
-                      multiple
-                      onChange={handleFileSelect}
-                      className="hidden"
-                    />
+                    <Button
+                      type="submit"
+                      disabled={files.length === 0 || loading}
+                      className="w-full bg-blue-600 mt-4 hover:bg-blue-700 text-white px-8 py-6 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg shadow-blue-500/25"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+                          Processing {files.length} PDF(s)...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-3 h-5 w-5" />
+                          Extract Data from {files.length > 0 ? files.length : ''} File(s)
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={handleScreenshotUpload} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {[1, 2, 3].map((num) => (
+                      <div key={num} className="space-y-4">
+                        <div className="text-center space-y-1">
+                          <Label className="text-teal-600 font-bold text-base block">
+                            Image {num} {num === 1 ? '(Optional)' : ''}
+                          </Label>
+                          <p className="text-slate-500 text-xs">
+                            {num === 1 ? 'Photo + QR Popup (for colored photo)' :
+                              num === 2 ? 'Front of ID Card' :
+                                'Back of ID Card'}
+                          </p>
+                        </div>
+                        <div
+                          className={`relative border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all duration-200 h-56 flex flex-col items-center justify-center ${screenshotFiles[num - 1]
+                            ? 'border-green-200 bg-green-50'
+                            : 'border-blue-100 hover:border-blue-300 bg-slate-50/50'
+                            }`}
+                          onClick={() => document.getElementById(`screenshot-${num}`)?.click()}
+                        >
+                          {screenshotFiles[num - 1] ? (
+                            <div className="w-full h-full relative">
+                              <Image
+                                src={URL.createObjectURL(screenshotFiles[num - 1]!)}
+                                alt={`Screenshot ${num}`}
+                                fill
+                                className="object-contain"
+                              />
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const newFiles = [...screenshotFiles];
+                                  newFiles[num - 1] = null;
+                                  setScreenshotFiles(newFiles);
+                                }}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 z-10"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex gap-1 mb-4">
+                                <Upload className="h-6 w-6 text-blue-200" />
+
+                              </div>
+                              <div className="bg-slate-200/50 shadow-sm px-6 py-2 rounded-lg text-slate-700 font-medium text-sm hover:bg-slate-200 transition-colors">
+                                Select
+                              </div>
+                            </>
+                          )}
+                          <Input
+                            id={`screenshot-${num}`}
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0] || null;
+                              const newFiles = [...screenshotFiles];
+                              newFiles[num - 1] = file;
+                              setScreenshotFiles(newFiles);
+                            }}
+                            className="hidden"
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
                   <Button
                     type="submit"
-                    disabled={files.length === 0 || loading}
+                    disabled={!screenshotFiles[1] || !screenshotFiles[2] || loading}
                     className="w-full bg-blue-600 mt-4 hover:bg-blue-700 text-white px-8 py-6 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg shadow-blue-500/25"
                   >
                     {loading ? (
                       <>
                         <Loader2 className="mr-3 h-5 w-5 animate-spin" />
-                        Processing {files.length} PDF(s)...
+                        Processing Screenshots...
                       </>
                     ) : (
                       <>
                         <Upload className="mr-3 h-5 w-5" />
-                        Extract Data from {files.length > 0 ? files.length : ''} File(s)
+                        Extract Data from Screenshots
                       </>
                     )}
                   </Button>
-                </div>
-              </form>
+                </form>
+              )}
 
               {/* Points Warning */}
               {userPoints && userPoints.points < files.length && (
