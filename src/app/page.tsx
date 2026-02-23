@@ -305,7 +305,7 @@ export default function Home() {
       });
 
       if (response.data.success) {
-        if (validateExtractedData(response.data)) {
+        if (response.data) {
           // Transform image URLs to bypass CORS
           const transformedData = {
             ...response.data,
