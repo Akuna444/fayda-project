@@ -767,12 +767,44 @@ function GeneratedIDCardList({ dataList, customFrontTemplate, customBackTemplate
         removeContainer: true,
         width: element.offsetWidth,
         height: element.offsetHeight,
-        onclone: (clonedDoc, element) => {
-          // Ensure all images are loaded
-          const images = clonedDoc.querySelectorAll('img');
-          images.forEach(img => {
+        onclone: async (clonedDoc, clonedElement) => {
+          // Ensure all images are loaded and handle filters
+          const images = Array.from(clonedDoc.querySelectorAll('img'));
+
+          for (const img of images) {
             img.crossOrigin = 'anonymous';
-          });
+
+            // Wait for image to load to ensure it's available for canvas drawing
+            if (!img.complete) {
+              await new Promise((resolve) => {
+                img.onload = resolve;
+                img.onerror = resolve;
+              });
+            }
+
+            const filter = img.style.filter;
+            if (filter && filter !== 'none') {
+              try {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth || img.width;
+                canvas.height = img.naturalHeight || img.height;
+                const ctx = canvas.getContext('2d');
+
+                if (ctx) {
+                  // Apply the filter to the canvas context
+                  ctx.filter = filter;
+                  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                  // Replace image source with the "baked" filtered image
+                  img.src = canvas.toDataURL('image/png');
+                  // Remove filter attribute to avoid double filtering if html2canvas ever supports it
+                  img.style.filter = 'none';
+                }
+              } catch (e) {
+                console.error('Error applying filter to image during capture:', e);
+              }
+            }
+          }
         }
       });
 
@@ -996,6 +1028,9 @@ function GeneratedIDCardPreview({ data, index, customFrontTemplate, customBackTe
   const [selectedMiniProfileImage, setSelectedMiniProfileImage] = useState<string>(data.images?.[0] || '');
   const [selectedQRCodeImage, setSelectedQRCodeImage] = useState<string>(data.images?.[2] || '');
   const [serialNumber, setSerialNumber] = useState<string>(generateRandomSerial());
+  const [hue, setHue] = useState<number>(0);
+  const [saturation, setSaturation] = useState<number>(100);
+  const [lightness, setLightness] = useState<number>(100);
 
   const defaultFrontImageUrl = '/front-template.jpg';
   const defaultBackImageUrl = '/back-template.jpg';
@@ -1115,6 +1150,72 @@ function GeneratedIDCardPreview({ data, index, customFrontTemplate, customBackTe
               </div>
             </div>
           </div>
+
+          {/* HSL Controls */}
+          <div className="mt-6 pt-6 border-t border-slate-200">
+            <h4 className="text-sm font-bold text-slate-500 uppercase mb-4">Image Adjustments (HSL)</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <Label htmlFor={`hue-${index}`} className="text-xs font-bold text-slate-500 uppercase">Hue Rotation</Label>
+                  <span className="text-xs font-mono text-slate-400">{hue}°</span>
+                </div>
+                <input
+                  id={`hue-${index}`}
+                  type="range"
+                  min="0"
+                  max="360"
+                  value={hue}
+                  onChange={(e) => setHue(parseInt(e.target.value))}
+                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <Label htmlFor={`saturation-${index}`} className="text-xs font-bold text-slate-500 uppercase">Saturation</Label>
+                  <span className="text-xs font-mono text-slate-400">{saturation}%</span>
+                </div>
+                <input
+                  id={`saturation-${index}`}
+                  type="range"
+                  min="0"
+                  max="200"
+                  value={saturation}
+                  onChange={(e) => setSaturation(parseInt(e.target.value))}
+                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <Label htmlFor={`lightness-${index}`} className="text-xs font-bold text-slate-500 uppercase">Brightness</Label>
+                  <span className="text-xs font-mono text-slate-400">{lightness}%</span>
+                </div>
+                <input
+                  id={`lightness-${index}`}
+                  type="range"
+                  min="0"
+                  max="200"
+                  value={lightness}
+                  onChange={(e) => setLightness(parseInt(e.target.value))}
+                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                />
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setHue(0);
+                  setSaturation(100);
+                  setLightness(100);
+                }}
+                className="text-xs text-slate-500 hover:text-blue-600"
+              >
+                Reset Adjustments
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1162,7 +1263,8 @@ function GeneratedIDCardPreview({ data, index, customFrontTemplate, customBackTe
                       width: '440px',
                       height: '540px',
                       objectFit: 'cover',
-                      borderRadius: '8px'
+                      borderRadius: '8px',
+                      filter: `hue-rotate(${hue}deg) saturate(${saturation}%) brightness(${lightness}%)`
                     }}
                   />
                   <img crossOrigin="anonymous"
