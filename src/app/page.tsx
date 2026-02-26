@@ -1024,7 +1024,7 @@ interface GeneratedIDCardPreviewProps {
 }
 
 function GeneratedIDCardPreview({ data, index, customFrontTemplate, customBackTemplate }: GeneratedIDCardPreviewProps) {
-  const [selectedProfileImage, setSelectedProfileImage] = useState<string>(data.images?.[0] || '');
+  const [selectedProfileImage, setSelectedProfileImage] = useState<string>((data.images && data.images.length > 1) ? data.images[1] : (data.images?.[0] || ''));
   const [selectedMiniProfileImage, setSelectedMiniProfileImage] = useState<string>(data.images?.[0] || '');
   const [selectedQRCodeImage, setSelectedQRCodeImage] = useState<string>(data.images?.[2] || '');
   const [serialNumber, setSerialNumber] = useState<string>(generateRandomSerial());
@@ -1052,7 +1052,7 @@ function GeneratedIDCardPreview({ data, index, customFrontTemplate, customBackTe
   // Update selected images when data changes
   useEffect(() => {
     if (data.images && data.images.length > 0) {
-      setSelectedProfileImage(data.images[0]);
+      setSelectedProfileImage(data.images.length > 1 ? data.images[1] : data.images[0]);
       setSelectedMiniProfileImage(data.images[0]);
       if (data.images.length > 2) {
         setSelectedQRCodeImage(data.images[2]);
@@ -1080,7 +1080,7 @@ function GeneratedIDCardPreview({ data, index, customFrontTemplate, customBackTe
               >
                 {data.images.map((image: string, idx: number) => (
                   <option key={idx} value={image}>
-                    {idx === 0 ? 'Default Profile' : `Image ${idx + 1}`}
+                    {idx === 1 ? 'Default Profile (Image 2)' : (idx === 0 ? 'Image 1' : `Image ${idx + 1}`)}
                   </option>
                 ))}
               </select>
