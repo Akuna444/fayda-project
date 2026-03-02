@@ -814,6 +814,10 @@ function GeneratedIDCardList({ dataList, customFrontTemplate, customBackTemplate
       mirroredCanvas.height = canvas.height;
       const ctx = mirroredCanvas.getContext('2d');
 
+      if (!ctx) {
+        return null;
+      }
+
       // Flip horizontally for printing
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
@@ -1016,8 +1020,33 @@ function GeneratedIDCardList({ dataList, customFrontTemplate, customBackTemplate
 }
 
 
+interface ExtractedData {
+  english_name: string;
+  english_nationality: string;
+  english_gender: string;
+  english_sub_city: string;
+  english_city: string;
+  english_woreda: string;
+  birth_date_ethiopian: string;
+  birth_date_gregorian: string;
+  amharic_gender: string;
+  amharic_city: string;
+  amharic_sub_city: string;
+  amharic_nationality: string;
+  amharic_name: string;
+  amharic_woreda: string;
+  issue_date_gregorian: string;
+  issue_date_ethiopian: string;
+  phone_number: string;
+  expiry_date_gregorian: string;
+  expiry_date_ethiopian: string;
+  fcn_id: string;
+  fin_number: string;
+  images: string[];
+}
+
 interface GeneratedIDCardPreviewProps {
-  data: any;
+  data: ExtractedData;
   index: number;
   customFrontTemplate?: string | null;
   customBackTemplate?: string | null;
@@ -1052,13 +1081,16 @@ function GeneratedIDCardPreview({ data, index, customFrontTemplate, customBackTe
   // Update selected images when data changes
   useEffect(() => {
     if (data.images && data.images.length > 0) {
-      setSelectedProfileImage(data.images.length > 1 ? data.images[1] : data.images[0]);
-      setSelectedMiniProfileImage(data.images[0]);
-      if (data.images.length > 2) {
-        setSelectedQRCodeImage(data.images[2]);
-      }
+      // Use setTimeout to avoid synchronous setState calls
+      setTimeout(() => {
+        setSelectedProfileImage(data.images.length > 1 ? data.images[1] : data.images[0]);
+        setSelectedMiniProfileImage(data.images[0]);
+        if (data.images.length > 2) {
+          setSelectedQRCodeImage(data.images[2]);
+        }
+        setSerialNumber(generateRandomSerial());
+      }, 0);
     }
-    setSerialNumber(generateRandomSerial());
   }, [data.images]);
 
   return (
