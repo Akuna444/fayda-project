@@ -17,7 +17,6 @@ export default function RegisterPage() {
     resolver: zodResolver(signupSchema),
     defaultValues: {
       email: '',
-      username: '',
       phone: '',
       password: '',
       confirmPassword: '',
@@ -34,7 +33,6 @@ export default function RegisterPage() {
     const res = await signUp.email({
       email: data.email,
       phone: data.phone,
-      username: data.username,
       password: data.password,
     });
 
@@ -114,23 +112,7 @@ export default function RegisterPage() {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Username</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="text" 
-                        placeholder="Choose a username"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+
               <FormField
                 control={form.control}
                 name="email"
@@ -144,7 +126,7 @@ export default function RegisterPage() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="phone"
@@ -152,17 +134,17 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel>Phone</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="tel" 
-                        placeholder="Enter your phone number" 
-                        {...field} 
+                      <Input
+                        type="tel"
+                        placeholder="Enter your phone number"
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="password"
@@ -170,17 +152,17 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="password" 
-                        placeholder="Create a password" 
-                        {...field} 
+                      <Input
+                        type="password"
+                        placeholder="Create a password"
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="confirmPassword"
@@ -188,20 +170,20 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="password" 
-                        placeholder="Confirm your password" 
-                        {...field} 
+                      <Input
+                        type="password"
+                        placeholder="Confirm your password"
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
-              <Button 
-                type="submit" 
-                className="w-full" 
+
+              <Button
+                type="submit"
+                className="w-full"
                 disabled={form.formState.isSubmitting}
               >
                 {form.formState.isSubmitting ? 'Creating account...' : 'Register'}
@@ -210,7 +192,7 @@ export default function RegisterPage() {
           </Form>
           {error && (<p className="mt-4 text-sm text-red-600 text-center">{error}</p>
           )}
-          
+
           <div className="mt-4 text-center">
             <p className="text-sm text-gray-600">
               Already have an account?{' '}
