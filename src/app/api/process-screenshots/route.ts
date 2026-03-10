@@ -25,7 +25,7 @@ export async function POST(request: Request) {
             );
         }
 
-        const jwtToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTY0YTkyYTBiYzlhMDlmMjdmYjY0YjkiLCJpYXQiOjE3NzI0Nzg3OTQsImV4cCI6MTc3MzA4MzU5NH0.4XBK7LSYiJwUIquiah9vnwZ_PFHi6TfLBebwV4DE5sI"
+        const jwtToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTY0YTkyYTBiYzlhMDlmMjdmYjY0YjkiLCJpYXQiOjE3NzMxNjI3ODUsImV4cCI6MTc3Mzc2NzU4NX0.sBYNIOPetKwecdp_aCZZLqUkvAsOY-4hK__wHubL0SY"
 
         if (!image2 || !image3) {
             return NextResponse.json(
