@@ -1708,7 +1708,7 @@ function GeneratedIDCardPreview({ data, index, customFrontTemplate, customBackTe
                       left: '55px',
                       width: '440px',
                       height: '540px',
-                      objectFit: 'cover',
+                      objectFit: 'contain',
                       borderRadius: '8px',
                       filter: `hue-rotate(${hue}deg) saturate(${saturation}%) brightness(${lightness}%) contrast(${contrast}%) grayscale(${grayscale}%) sepia(${sepia}%)`
                     }}
