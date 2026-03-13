@@ -1416,14 +1416,14 @@ interface GeneratedIDCardPreviewProps {
 function GeneratedIDCardPreview({ data, index, customFrontTemplate, customBackTemplate }: GeneratedIDCardPreviewProps) {
   const [selectedProfileImage, setSelectedProfileImage] = useState<string>((data.images && data.images.length > 1) ? data.images[1] : (data.images?.[0] || ''));
   const [selectedMiniProfileImage, setSelectedMiniProfileImage] = useState<string>(data.images?.[0] || '');
-  const [selectedQRCodeImage, setSelectedQRCodeImage] = useState<string>(data.images?.[2] || '');
+  const [selectedQRCodeImage, setSelectedQRCodeImage] = useState<string>(data.images?.[3] || data.images?.[2] || '');
   const [serialNumber, setSerialNumber] = useState<string>(generateRandomSerial());
   const [hue, setHue] = useState<number>(0);
-  const [saturation, setSaturation] = useState<number>(100);
-  const [lightness, setLightness] = useState<number>(100);
+  const [saturation, setSaturation] = useState<number>(25);
+  const [lightness, setLightness] = useState<number>(140);
   const [contrast, setContrast] = useState<number>(100);
   const [grayscale, setGrayscale] = useState<number>(0);
-  const [sepia, setSepia] = useState<number>(0);
+  const [sepia, setSepia] = useState<number>(60);
 
   const defaultFrontImageUrl = '/front-template.jpg';
   const defaultBackImageUrl = '/back-template.jpg';
@@ -1449,8 +1449,10 @@ function GeneratedIDCardPreview({ data, index, customFrontTemplate, customBackTe
       setTimeout(() => {
         setSelectedProfileImage(data.images.length > 1 ? data.images[1] : data.images[0]);
         setSelectedMiniProfileImage(data.images[0]);
-        if (data.images.length > 2) {
-          setSelectedQRCodeImage(data.images[2]);
+        if (data.images.length > 3) {
+          setSelectedQRCodeImage(data.images[3]); // Use image 4 (index 3)
+        } else if (data.images.length > 2) {
+          setSelectedQRCodeImage(data.images[2]); // Fallback to image 3 (index 2)
         }
         setSerialNumber(generateRandomSerial());
       }, 0);
@@ -1514,7 +1516,7 @@ function GeneratedIDCardPreview({ data, index, customFrontTemplate, customBackTe
               >
                 {data.images.map((image: string, idx: number) => (
                   <option key={idx} value={image}>
-                    {idx === 2 ? 'Default QR Code' : `Image ${idx + 1}`}
+                    {idx === 3 ? 'Default QR Code (Image 4)' : (idx === 2 ? 'Image 3' : `Image ${idx + 1}`)}
                   </option>
                 ))}
               </select>
@@ -1702,7 +1704,7 @@ function GeneratedIDCardPreview({ data, index, customFrontTemplate, customBackTe
                     alt="Profile"
                     className="absolute"
                     style={{
-                      top: '200px',
+                      top: '180px',
                       left: '55px',
                       width: '440px',
                       height: '540px',
